@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include <time.h>
 
 /*
  * Returns a random number from zero to one
@@ -53,7 +53,7 @@ double** matrix_multiplication(double **mat1,
 
 /*
  * Matrix transposition
- * INPUTS
+ * x  x INPUTS
  * mat: 2D array of double values
  * mat_row: number of rows of mat1
  * mat_col: number of columns of mat1
@@ -181,39 +181,69 @@ double** matrix_sigmoid(double **mat,
 }
 
 
+/*
+ * Returs a permutation of n natural numbers
+ * follows the Fisher-Yates algorithm
+ */
+int* shuffle(int n){
+  int* shuffled = (int*) calloc(n, sizeof(int));
+  // seed
+  time_t t;
+  srand((unsigned) time(&t));
+  for(int i=0; i<n; i++){
+    shuffled[i] = i;
+  }
+  int temp;
+  for(int i=n-1; i>=0; i--){
+    int pos = rand() % (i+1);
+    temp = shuffled[i];
+    shuffled[i] = shuffled[pos];
+    shuffled[pos] = temp;
+  }
+  printf("\n");
+  return shuffled;
+}
+
+
 int main(){
 
-  double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  for(int i=0; i<2; i++)
-    A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+  // double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  // for(int i=0; i<2; i++)
+  //   A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
 
-  double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  for(int i=0; i<2; i++)
-    B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
-  A[0][0] = 0;
-  A[0][1] = 1;
-  A[0][2] = 2;
-  A[1][0] = 9;
-  A[1][1] = 8;
-  A[1][2] = 7;
+  // double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  // for(int i=0; i<2; i++)
+  //   B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+  // A[0][0] = 0;
+  // A[0][1] = 1;
+  // A[0][2] = 2;
+  // A[1][0] = 9;
+  // A[1][1] = 8;
+  // A[1][2] = 7;
 
-  B[0][0] = 6;
-  B[0][1] = 5;
-  B[0][2] = 4;
-  B[1][0] = 3;
-  B[1][1] = 4;
-  B[1][2] = 5;
+  // B[0][0] = 6;
+  // B[0][1] = 5;
+  // B[0][2] = 4;
+  // B[1][0] = 3;
+  // B[1][1] = 4;
+  // B[1][2] = 5;
   
-  double **C = matrix_sigmoid(A,2,3);
-  // sigmoid
-  for(int i=0; i<2; i++){
-    for(int j=0; j<3; j++)
-      printf("%lf\t",C[i][j]);
-    printf("\n");
-  }
-  printf("%lf",1.);
-  free(A);
-  free(B);
-  free(C);
+  // double **C = matrix_sigmoid(A,2,3);
+  // // sigmoid
+  // for(int i=0; i<2; i++){
+  //   for(int j=0; j<3; j++)
+  //     printf("%lf\t",C[i][j]);
+  //   printf("\n");
+  // }
+  // printf("%lf",1.);
+  // free(A);
+  // free(B);
+  // free(C);
+  int n = 10;
+  int* shuffled = shuffle(n);
+  for(int i = 0; i<n; i++)
+    printf("%d\t", shuffled[i]);
+  printf("\n");
+  free(shuffled);
   return 0;
 }
