@@ -37,9 +37,9 @@ double** matrix_multiplication(double **mat1,
   }
 
   // Matrix allocation
-  double** product = (double**) calloc(mat1_row, sizeof(double*)); // allocate matrix pointer
+  double** product = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
-    product[i] = (double*) calloc(mat2_col, sizeof(double)); // allocate each element
+    product[i] = (double*) calloc(mat2_col, sizeof(double)); // allocate each element, calloc to initialize to zero
 
   // Matrix multiplication
   for(int i=0; i<mat1_row; i++)
@@ -64,9 +64,9 @@ double** matrix_transposition(double **mat,
                                int mat_row,
                                int mat_col){
   // Matrix allocation
-  double** transpo = (double**) calloc(mat_col, sizeof(double*)); // allocate matrix pointer
+  double** transpo = (double**) malloc(mat_col * sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat_col; i++)
-    transpo[i] = (double*) calloc(mat_row, sizeof(double)); // allocate each element
+    transpo[i] = (double*) malloc(mat_row * sizeof(double)); // allocate each element
 
   // transpositon
   for(int i=0; i<mat_col; i++)
@@ -103,9 +103,9 @@ double** matrix_addition(double **mat1,
   }
 
   // Matrix allocation
-  double** sum = (double**) calloc(mat1_row, sizeof(double*)); // allocate matrix pointer
+  double** sum = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
-    sum[i] = (double*) calloc(mat1_col, sizeof(double)); // allocate each element
+    sum[i] = (double*) malloc(mat1_col * sizeof(double)); // allocate each element
   printf("%d %d\n", mat1_row, mat1_col);
   // Addition
   for(int i=0; i<mat1_row; i++)
@@ -142,9 +142,9 @@ double** pointwise_multiplication(double **mat1,
   }
 
   // Matrix allocation
-  double** product = (double**) calloc(mat1_row, sizeof(double*)); // allocate matrix pointer
+  double** product = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
-    product[i] = (double*) calloc(mat1_col, sizeof(double)); // allocate each element
+    product[i] = (double*) malloc(mat1_col * sizeof(double)); // allocate each element
   
   // Sigmoid
   for(int i=0; i<mat1_row; i++)
@@ -168,9 +168,9 @@ double** matrix_sigmoid(double **mat,
                                int mat_row,
                                int mat_col){
   // Matrix allocation
-  double** sigmoid = (double**) calloc(mat_row, sizeof(double*)); // allocate matrix pointer
+  double** sigmoid = (double**) malloc(mat_row * sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat_row; i++)
-    sigmoid[i] = (double*) calloc(mat_col, sizeof(double)); // allocate each element
+    sigmoid[i] = (double*) malloc(mat_col * sizeof(double)); // allocate each element
 
   // transpositon
   for(int i=0; i<mat_row; i++)
@@ -182,11 +182,11 @@ double** matrix_sigmoid(double **mat,
 
 
 /*
- * Returs a permutation of n natural numbers
+ * Returns a permutation of n natural numbers
  * follows the Fisher-Yates algorithm
  */
 int* shuffle(int n){
-  int* shuffled = (int*) calloc(n, sizeof(int));
+  int* shuffled = (int*) malloc(n * sizeof(int));
   // seed
   time_t t;
   srand((unsigned) time(&t));
@@ -207,43 +207,42 @@ int* shuffle(int n){
 
 int main(){
 
-  // double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  // for(int i=0; i<2; i++)
-  //   A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+  double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  for(int i=0; i<2; i++)
+    A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
 
-  // double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  // for(int i=0; i<2; i++)
-  //   B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
-  // A[0][0] = 0;
-  // A[0][1] = 1;
-  // A[0][2] = 2;
-  // A[1][0] = 9;
-  // A[1][1] = 8;
-  // A[1][2] = 7;
+  double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  for(int i=0; i<3; i++)
+    B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+  A[0][0] = 0;
+  A[0][1] = 1;
+  A[0][2] = 2;
+  A[1][0] = 9;
+  A[1][1] = 8;
+  A[1][2] = 7;
 
-  // B[0][0] = 6;
-  // B[0][1] = 5;
-  // B[0][2] = 4;
-  // B[1][0] = 3;
-  // B[1][1] = 4;
-  // B[1][2] = 5;
+  B[0][0] = 6;
+  B[0][1] = 5;
+  B[0][2] = 4;
+  B[1][0] = 3;
+  B[1][1] = 4;
+  B[1][2] = 5;
   
-  // double **C = matrix_sigmoid(A,2,3);
-  // // sigmoid
-  // for(int i=0; i<2; i++){
-  //   for(int j=0; j<3; j++)
-  //     printf("%lf\t",C[i][j]);
-  //   printf("\n");
-  // }
-  // printf("%lf",1.);
-  // free(A);
-  // free(B);
-  // free(C);
-  int n = 10;
-  int* shuffled = shuffle(n);
-  for(int i = 0; i<n; i++)
-    printf("%d\t", shuffled[i]);
-  printf("\n");
-  free(shuffled);
+  double **C = matrix_transposition(A,2,3);
+  // sigmoid
+  for(int i=0; i<3; i++){
+    for(int j=0; j<2; j++)
+      printf("%lf\t",C[i][j]);
+    printf("\n");
+  }
+  free(A);
+  free(B);
+  free(C);
+  // int n = 10;
+  // int* shuffled = shuffle(n);
+  // for(int i = 0; i<n; i++)
+  //   printf("%d\t", shuffled[i]);
+  // printf("\n");
+  // free(shuffled);
   return 0;
 }
