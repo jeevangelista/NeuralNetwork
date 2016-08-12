@@ -187,9 +187,6 @@ double** matrix_sigmoid(double **mat,
  */
 int* shuffle(int n){
   int* shuffled = (int*) malloc(n * sizeof(int));
-  // seed
-  time_t t;
-  srand((unsigned) time(&t));
   for(int i=0; i<n; i++){
     shuffled[i] = i;
   }
@@ -205,44 +202,93 @@ int* shuffle(int n){
 }
 
 
-int main(){
-
-  double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  for(int i=0; i<2; i++)
-    A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
-
-  double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  for(int i=0; i<3; i++)
-    B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
-  A[0][0] = 0;
-  A[0][1] = 1;
-  A[0][2] = 2;
-  A[1][0] = 9;
-  A[1][1] = 8;
-  A[1][2] = 7;
-
-  B[0][0] = 6;
-  B[0][1] = 5;
-  B[0][2] = 4;
-  B[1][0] = 3;
-  B[1][1] = 4;
-  B[1][2] = 5;
-  
-  double **C = matrix_transposition(A,2,3);
-  // sigmoid
-  for(int i=0; i<3; i++){
-    for(int j=0; j<2; j++)
-      printf("%lf\t",C[i][j]);
-    printf("\n");
+/*
+ * Initializes weights of the network
+ * structure: Array of network structure (size = hidden_layers + 2)
+ * hidden_layers: Number of hidden layer
+ * NN[number of hidden layers+1][node to the right of the edge][node to the left of the edge]
+ */
+double*** initialize_network(int* structure, int hidden_layers){
+  double*** NN = (double***) malloc((hidden_layers+1) * sizeof(double***));
+  for(int i=0; i<hidden_layers+1; i++){
+    NN[i] = (double**) malloc(structure[i+1] * sizeof(double**));
+    for(int j=0; j<structure[i+1]; j++){
+      NN[i][j] = (double*) malloc(structure[i] * sizeof(double*));
+      for(int k=0; k<structure[i]; k++)
+        NN[i][j][k] = random_zero_to_one();
+    }
   }
-  free(A);
-  free(B);
-  free(C);
+  return NN;
+}
+
+
+int main(){
+  // seed for randomness
+  time_t t;
+  srand((unsigned) time(&t));
+
+  // double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  // for(int i=0; i<2; i++)
+  //   A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+
+  // double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  // for(int i=0; i<3; i++)
+  //   B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+  // A[0][0] = 0;
+  // A[0][1] = 1;
+  // A[0][2] = 2;
+  // A[1][0] = 9;
+  // A[1][1] = 8;
+  // A[1][2] = 7;
+
+  // B[0][0] = 6;
+  // B[0][1] = 5;
+  // B[0][2] = 4;
+  // B[1][0] = 3;
+  // B[1][1] = 4;
+  // B[1][2] = 5;
+  
+  // double **C = matrix_transposition(A,2,3);
+  // // sigmoid
+  // for(int i=0; i<3; i++){
+  //   for(int j=0; j<2; j++)
+  //     printf("%lf\t",C[i][j]);
+  //   printf("\n");
+  // }
+  // free(A);
+  // free(B);
+  // free(C);
   // int n = 10;
   // int* shuffled = shuffle(n);
   // for(int i = 0; i<n; i++)
   //   printf("%d\t", shuffled[i]);
   // printf("\n");
   // free(shuffled);
+
+  int* structure = (int*) calloc(5, sizeof(int));
+  structure[0] = 6;
+  structure[1] = 5;
+  structure[2] = 4;
+  structure[3] = 3;
+  structure[4] = 2;
+
+  double*** NN = initialize_network(structure, 3);
+
+  for(int i=0; i<4; i++){
+    for(int j=0; j<structure[i+1]; j++){
+      for(int k=0; k<structure[i]; k++){
+        printf("%lf ", NN[i][j][k]);
+      }
+      printf("\n");
+    }
+      printf("\n");
+  }
+  for(int i=0; i<4; i++){
+    for(int j=0; j<structure[i+1]; j++){
+      free(NN[i][j]);
+    }
+      free(NN[i]);
+  }
+  free(NN);
   return 0;
 }
