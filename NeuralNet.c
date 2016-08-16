@@ -209,11 +209,11 @@ int* shuffle(int n){
  * NN[number of hidden layers+1][node to the right of the edge][node to the left of the edge]
  */
 double*** initialize_network(int* structure, int hidden_layers){
-  double*** NN = (double***) malloc((hidden_layers+1) * sizeof(double***));
+  double*** NN = (double***) malloc((hidden_layers+1) * sizeof(double**));
   for(int i=0; i<hidden_layers+1; i++){
-    NN[i] = (double**) malloc(structure[i+1] * sizeof(double**));
+    NN[i] = (double**) malloc(structure[i+1] * sizeof(double*));
     for(int j=0; j<structure[i+1]; j++){
-      NN[i][j] = (double*) malloc(structure[i] * sizeof(double*));
+      NN[i][j] = (double*) malloc(structure[i] * sizeof(double));
       for(int k=0; k<structure[i]; k++)
         NN[i][j][k] = random_zero_to_one();
     }
@@ -222,10 +222,15 @@ double*** initialize_network(int* structure, int hidden_layers){
 }
 
 
+/*
+ * Initializes biases of the network
+ * structure: Array of network structure (size = hidden_layers + 2)
+ * hidden_layers: Number of hidden layer
+ */
 double** initialize_bias(int* structure, int hidden_layers){
-  double** bias = (double**) malloc((hidden_layers+1) * sizeof(double**));
+  double** bias = (double**) malloc((hidden_layers+1) * sizeof(double*));
   for(int i=0; i<hidden_layers+1; i++){
-    bias[i] = (double*) malloc(structure[i+1] * sizeof(double*));
+    bias[i] = (double*) malloc(structure[i+1] * sizeof(double));
     for(int j=0; j<structure[i+1]; j++){
       bias[i][j] = random_zero_to_one();
     }
@@ -282,31 +287,35 @@ int main(){
   structure[1] = 5;
   structure[2] = 4;
   structure[3] = 3;
+  structure[4] = 2;
 
-  // double*** NN = initialize_network(structure, 3);
+  double*** NN = initialize_network(structure, 3);
 
-  // for(int i=0; i<4; i++){
-  //   for(int j=0; j<structure[i+1]; j++){
-  //     for(int k=0; k<structure[i]; k++){
-  //       printf("%lf ", NN[i][j][k]);
-  //     }
-  //     printf("\n");
-  //   }
-  //     printf("\n");
-  // }
-  // for(int i=0; i<4; i++){
-  //   for(int j=0; j<structure[i+1]; j++){
-  //     free(NN[i][j]);
-  //   }
-  //     free(NN[i]);
-  // }
-  // free(NN);
-  double ** bias = initialize_bias(structure, 2);
-  for(int i=0; i<3; i++){
+  for(int i=0; i<4; i++){
+    for(int j=0; j<structure[i+1]; j++){
+      for(int k=0; k<structure[i]; k++){
+        printf("%lf ", NN[i][j][k]);
+      }
+      printf("\n");
+    }
+      printf("\n");
+  }
+  for(int i=0; i<4; i++){
+    for(int j=0; j<structure[i+1]; j++){
+      free(NN[i][j]);
+    }
+      free(NN[i]);
+  }
+  free(NN);
+  double ** bias = initialize_bias(structure, 3);
+  for(int i=0; i<4; i++){
     for(int j=0; j< structure[i+1]; j++){
       printf("%lf ", bias[i][j]);
     }
     printf("\n\n");
   }
+  for(int i=0; i<4; i++)
+    free(bias[i]);
+  free(bias);
   return 0;
 }
