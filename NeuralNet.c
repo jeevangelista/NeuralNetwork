@@ -86,6 +86,7 @@ double** matrix_transposition(double **mat,
  * mat2: 2D array of double values
  * mat2_row: number of rows of mat2
  * mat2_col: number of columns of mat2
+ * subtract: do subtraction instead
  * OUTPUT
  * sum: 2D matrix of products
  */
@@ -94,7 +95,8 @@ double** matrix_addition(double **mat1,
                          int mat1_col,
                          double **mat2,
                          int mat2_row,
-                         int mat2_col){
+                         int mat2_col,
+                         int subtract){
 
   // check size of matrices
   if(mat1_row != mat2_row && mat1_col != mat2_col){
@@ -107,10 +109,13 @@ double** matrix_addition(double **mat1,
   for(int i=0; i<mat1_row; i++)
     sum[i] = (double*) malloc(mat1_col * sizeof(double)); // allocate each element
   printf("%d %d\n", mat1_row, mat1_col);
+  int subtract_flag = 1;
+  if(subtract)
+    subtract_flag = -1;
   // Addition
   for(int i=0; i<mat1_row; i++)
     for(int j=0; j<mat1_col; j++)
-      sum[i][j] = mat1[i][j] + mat2[i][j];
+      sum[i][j] = mat1[i][j] + (subtract_flag * mat2[i][j]);
 
   return sum;
 }
@@ -210,7 +215,7 @@ int* shuffle(int n){
  */
 double*** initialize_network(int* structure, int hidden_layers){
   double*** NN = (double***) malloc((hidden_layers+1) * sizeof(double**));
-  for(int i=0; i<hidden_layers+1; i++){
+  for(int i=0; i<=hidden_layers; i++){
     NN[i] = (double**) malloc(structure[i+1] * sizeof(double*));
     for(int j=0; j<structure[i+1]; j++){
       NN[i][j] = (double*) malloc(structure[i] * sizeof(double));
@@ -229,7 +234,7 @@ double*** initialize_network(int* structure, int hidden_layers){
  */
 double** initialize_bias(int* structure, int hidden_layers){
   double** bias = (double**) malloc((hidden_layers+1) * sizeof(double*));
-  for(int i=0; i<hidden_layers+1; i++){
+  for(int i=0; i<=hidden_layers; i++){
     bias[i] = (double*) malloc(structure[i+1] * sizeof(double));
     for(int j=0; j<structure[i+1]; j++){
       bias[i][j] = random_zero_to_one();
@@ -239,21 +244,175 @@ double** initialize_bias(int* structure, int hidden_layers){
 }
 
 
+/*
+ * reserves memory for outputs of the network
+ * structure: Array of network structure (size = hidden_layers + 2)
+ * hidden_layers: Number of hidden layer
+ * out_NN[number of hidden layers+1][node to the right of the edge][node to the left of the edge]
+ */
+double** initialize_outputs(int* structure, int hidden_layers){
+  double** out_NN = (double**) malloc((hidden_layers+1) * sizeof(double*));
+  for(int i=0; i<=hidden_layers; i++){
+    out_NN[i] = (double*) malloc(structure[i+1] * sizeof(double));
+  }
+  return out_NN;
+}
+
+
+// reserves a block of memory for a matrix
+double** initialize_matrix(int row, int col, int zero_flag){
+  double** matrix = (double**) malloc(row * sizeof(double*));
+  for(int i=0; i<row; i++)
+    if(zero_flag)
+      matrix[i] = (double*) calloc(col, sizeof(double));
+    else
+      matrix[i] = (double*) malloc(col * sizeof(double));
+  return matrix;
+}
+
+
+/*
+ * Pointwise multiplication
+ * INPUTS
+ * src: 2D array of double values
+ * src_vector: 1D array of double values
+ * src_row: number of rows of src
+ * src_col: number of columns of src
+ * dest: 2D array of double values
+ * dest_vector: 1D array of double values
+ * dest_row: number of rows of dest
+ * dest_col: number of columns of dest
+ * OUTPUT
+ * product: 2D matrix of products
+ */
+void copy_pointer(double **src,
+                  double *src_vector,
+                  int src_row,
+                  int src_col,
+                  double **dest,
+                  double *dest_vector,
+                  int dest_row,
+                  int dest_col){
+  if(src_col==1 && dest_col==0 && src && dest_vector && dest == NULL && src_vector == NULL){ // dest is a vector
+    for(int i=0; i<dest_row; i++)
+      dest_vector[i] = src[i][0];
+  }else if(src_col==0 && dest_col==1 && src_vector && dest && dest_vector == NULL && src == NULL){ //src is a vector
+    for(int i=0; i<dest_row; i++)
+      dest[i][0] = src_vector[i];
+  }else if(src_col == dest_col && src_row == dest_row && src_vector == NULL && dest_vector == NULL){
+    for(int i=0; i<dest_row; i++)
+      for(int j=0; j<dest_col; j++)
+        dest[i][j] = src[i][j];
+  }else{
+    fprintf(stderr, "ERROR: error in matrices!");
+    exit(EXIT_FAILURE);
+  }
+}
+
+
+/*
+ * Frees a matrix pointer
+ */
+void free_matrix(double** matrix,
+                 int row,
+                 int col){
+  for(int i=0; i<row; i++)
+    free(matrix[i]);
+  free(matrix);
+}
+
+
+/*
+ * Train Neural Networks
+ * INPUTS
+ * max_epoch: maximum number of epochs
+ * inputs: number of inputs of the network
+ * instances: number of input instances
+ * outputs: number of output outcomes
+ * input_matrix: input matrix
+ * output_vector: list of expected outputs
+ * learning_rate: learning rate
+ */
+int train_neural_network(int max_epoch,
+                          int instances,
+                          int* structure,
+                          int hidden_layers,
+                          double ** input_matrix, 
+                          int* output_vector,
+                          double learning_rate){
+
+  // initialize network weights
+  double*** NN = initialize_network(structure, hidden_layers);
+  double** bias = initialize_bias(structure, hidden_layers);
+  double** out_NN = initialize_outputs(structure, hidden_layers);
+
+  // initialize other variables
+  double* totalerr = (double*) calloc(max_epoch, sizeof(double)); // calloc initializes to zero
+  double** desired = initialize_matrix(structure[hidden_layers+1], 1, 1);
+  for(int iter=0; iter<max_epoch; iter++){
+    int* perm = shuffle(instances);
+    for(int n=0; n<instances; n++){
+      // Pick an input and out output randomly
+      desired[output_vector[perm[n]]][0] = 1;
+
+      double** in = initialize_matrix(structure[0],1, 0);
+      copy_pointer(NULL, input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
+      
+      // forward pass
+      for(int i=0; i<=hidden_layers; i++){
+        double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
+        copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
+        double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
+        free_matrix(in,structure[i],1);
+        double** v_add = matrix_addition(v_mul,structure[i+1],1,layer_bias,structure[i+1],1,0);
+        free_matrix(v_mul,structure[i+1],1);
+        double** out = matrix_sigmoid(v_add, structure[i+1],1);
+        free_matrix(v_add,structure[i+1],1);
+        free_matrix(layer_bias,structure[i+1],1);
+        copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
+        double** in = out;
+      }
+      
+      // reset output
+      desired[output_vector[perm[n]]][0] = 0;
+    }
+  }
+
+  // free variables
+  for(int i=0; i<4; i++){
+    for(int j=0; j<structure[i+1]; j++){
+      free(NN[i][j]);
+    }
+      free(NN[i]);
+  }
+  free(NN);
+  for(int i=0; i<4; i++)
+    free(bias[i]);
+  free(bias);
+  free(totalerr);
+  free(desired);
+
+  return 0;
+ }
+
+
 int main(){
   // seed for randomness
-  time_t t;
-  srand((unsigned) time(&t));
+  // time_t t;
+  // srand((unsigned) time(&t));
 
-  // double** A = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
-  // for(int i=0; i<2; i++)
-  //   A[i] = (double*) calloc(3, sizeof(double)); // allocate each element
+  // double* A = (double*) calloc(3, sizeof(double)); // allocate matrix pointer
+  // // for(int i=0; i<3; i++)
+  // //   A[i] = (double*) calloc(1, sizeof(double)); // allocate each element
 
-  // double** B = (double**) calloc(2, sizeof(double*)); // allocate matrix pointer
+  // double** B = (double**) calloc(3, sizeof(double*)); // allocate matrix pointer
   // for(int i=0; i<3; i++)
-  //   B[i] = (double*) calloc(3, sizeof(double)); // allocate each element
-  // A[0][0] = 0;
-  // A[0][1] = 1;
-  // A[0][2] = 2;
+  //   B[i] = (double*) calloc(1, sizeof(double)); // allocate each element
+  
+  // A[0] = 0;
+  // A[1] = 1;
+  // A[2] = 2;
+
   // A[1][0] = 9;
   // A[1][1] = 8;
   // A[1][2] = 7;
@@ -264,6 +423,16 @@ int main(){
   // B[1][0] = 3;
   // B[1][1] = 4;
   // B[1][2] = 5;
+
+  // copy_pointer(NULL,A,3,0,B,NULL,3,1);
+
+  // for(int i=0; i<3; i++){
+  //   for(int j=0; j<1; j++)
+  //     printf("%lf ",B[i][j]);
+  //   printf("\n");
+  // }
+  // free_pointer(NULL,A,3,0);
+  // free_pointer(B,NULL,3,1);
   
   // double **C = matrix_transposition(A,2,3);
   // // sigmoid
