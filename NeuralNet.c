@@ -108,7 +108,6 @@ double** matrix_addition(double **mat1,
   double** sum = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
     sum[i] = (double*) malloc(mat1_col * sizeof(double)); // allocate each element
-  printf("%d %d\n", mat1_row, mat1_col);
   int subtract_flag = 1;
   if(subtract)
     subtract_flag = -1;
@@ -202,7 +201,6 @@ int* shuffle(int n){
     shuffled[i] = shuffled[pos];
     shuffled[pos] = temp;
   }
-  printf("\n");
   return shuffled;
 }
 
@@ -337,7 +335,7 @@ int train_neural_network(int max_epoch,
                           int instances,
                           int* structure,
                           int hidden_layers,
-                          double ** input_matrix, 
+                          double** input_matrix, 
                           int* output_vector,
                           double learning_rate){
 
@@ -354,10 +352,8 @@ int train_neural_network(int max_epoch,
     for(int n=0; n<instances; n++){
       // Pick an input and out output randomly
       desired[output_vector[perm[n]]][0] = 1;
-
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
-      
       // forward pass
       for(int i=0; i<=hidden_layers; i++){
         double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
@@ -370,23 +366,22 @@ int train_neural_network(int max_epoch,
         free_matrix(v_add,structure[i+1],1);
         free_matrix(layer_bias,structure[i+1],1);
         copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
-        double** in = out;
+        in = out;
       }
       
       // reset output
       desired[output_vector[perm[n]]][0] = 0;
     }
   }
-
   // free variables
-  for(int i=0; i<4; i++){
+  for(int i=0; i<hidden_layers+1; i++){
     for(int j=0; j<structure[i+1]; j++){
       free(NN[i][j]);
     }
       free(NN[i]);
   }
   free(NN);
-  for(int i=0; i<4; i++)
+  for(int i=0; i<hidden_layers+1; i++)
     free(bias[i]);
   free(bias);
   free(totalerr);
@@ -398,8 +393,8 @@ int train_neural_network(int max_epoch,
 
 int main(){
   // seed for randomness
-  // time_t t;
-  // srand((unsigned) time(&t));
+  time_t t;
+  srand((unsigned) time(&t));
 
   // double* A = (double*) calloc(3, sizeof(double)); // allocate matrix pointer
   // // for(int i=0; i<3; i++)
@@ -452,39 +447,81 @@ int main(){
   // free(shuffled);
 
   int* structure = (int*) calloc(4, sizeof(int));
-  structure[0] = 6;
+  structure[0] = 3;
   structure[1] = 5;
   structure[2] = 4;
-  structure[3] = 3;
-  structure[4] = 2;
+  structure[3] = 8;
+  //structure[4] = 2;
 
-  double*** NN = initialize_network(structure, 3);
+  int hidden_layers = 2;
+  int max_epoch = 10000;
+  int instances = 8;
+  double learning_rate = 0.1;
+  double** input_matrix = initialize_matrix(instances, 3, 0);
+  input_matrix[0][0] = 0;
+  input_matrix[0][1] = 0;
+  input_matrix[0][2] = 0;
+  input_matrix[1][0] = 1;
+  input_matrix[1][1] = 0;
+  input_matrix[1][2] = 0;
+  input_matrix[2][0] = 0;
+  input_matrix[2][1] = 1;
+  input_matrix[2][2] = 0;
+  input_matrix[3][0] = 1;
+  input_matrix[3][1] = 1;
+  input_matrix[3][2] = 0;
+  input_matrix[4][0] = 0;
+  input_matrix[4][1] = 0;
+  input_matrix[4][2] = 1;
+  input_matrix[5][0] = 1;
+  input_matrix[5][1] = 0;
+  input_matrix[5][2] = 1;
+  input_matrix[6][0] = 0;
+  input_matrix[6][1] = 1;
+  input_matrix[6][2] = 1;
+  input_matrix[7][0] = 1;
+  input_matrix[7][1] = 1;
+  input_matrix[7][2] = 1;
+  int* output_vector = (int*) malloc(structure[hidden_layers+1]*sizeof(int));
+  output_vector[0] = 0;
+  output_vector[1] = 6;
+  output_vector[2] = 5;
+  output_vector[3] = 3;
+  output_vector[4] = 3;
+  output_vector[5] = 4;
+  output_vector[6] = 6;
+  output_vector[7] = 0;
 
-  for(int i=0; i<4; i++){
-    for(int j=0; j<structure[i+1]; j++){
-      for(int k=0; k<structure[i]; k++){
-        printf("%lf ", NN[i][j][k]);
-      }
-      printf("\n");
-    }
-      printf("\n");
-  }
-  for(int i=0; i<4; i++){
-    for(int j=0; j<structure[i+1]; j++){
-      free(NN[i][j]);
-    }
-      free(NN[i]);
-  }
-  free(NN);
-  double ** bias = initialize_bias(structure, 3);
-  for(int i=0; i<4; i++){
-    for(int j=0; j< structure[i+1]; j++){
-      printf("%lf ", bias[i][j]);
-    }
-    printf("\n\n");
-  }
-  for(int i=0; i<4; i++)
-    free(bias[i]);
-  free(bias);
+  train_neural_network(max_epoch, instances, structure, hidden_layers, input_matrix, output_vector, learning_rate);
+  free_matrix(input_matrix,8,3);
+  free(output_vector);
+  // double*** NN = initialize_network(structure, 3);
+
+  // for(int i=0; i<4; i++){
+  //   for(int j=0; j<structure[i+1]; j++){
+  //     for(int k=0; k<structure[i]; k++){
+  //       printf("%lf ", NN[i][j][k]);
+  //     }
+  //     printf("\n");
+  //   }
+  //     printf("\n");
+  // }
+  // for(int i=0; i<4; i++){
+  //   for(int j=0; j<structure[i+1]; j++){
+  //     free(NN[i][j]);
+  //   }
+  //     free(NN[i]);
+  // }
+  // free(NN);
+  // double ** bias = initialize_bias(structure, 3);
+  // for(int i=0; i<4; i++){
+  //   for(int j=0; j< structure[i+1]; j++){
+  //     printf("%lf ", bias[i][j]);
+  //   }
+  //   printf("\n\n");
+  // }
+  // for(int i=0; i<4; i++)
+  //   free(bias[i]);
+  // free(bias);
   return 0;
 }
