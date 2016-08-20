@@ -1,3 +1,9 @@
+/**************************************
+ *
+ * WRITTEN BY: JOHN EROL EVANGELISTA
+ *
+ **************************************/
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -320,6 +326,29 @@ void free_matrix(double** matrix,
 }
 
 
+/* 
+ * set values of output nodes
+ */
+void set_output_nodes(int value, int node_num, double** out){
+  int pow = 1 << node_num;
+  int mod = value % pow;
+  if(mod!=value){
+    fprintf(stderr, "ERROR: Number of nodes not enough to represent output!\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  for(int i=node_num-1; i>=0; i--){
+    int pow = 1<< i;
+    int quotient = value/pow;
+    value = value%pow;
+    if(quotient)
+      out[i][0]=1;
+    else
+      out[i][0]=0;
+  }
+}
+
+
 /*
  * Train Neural Networks
  * INPUTS
@@ -351,7 +380,11 @@ int train_neural_network(int max_epoch,
     int* perm = shuffle(instances);
     for(int n=0; n<instances; n++){
       // Pick an input and out output randomly
-      desired[output_vector[perm[n]]][0] = 1;
+      set_output_nodes(output_vector[perm[n]], structure[hidden_layers+1], desired);
+      printf("%d: ",output_vector[perm[n]]);
+      for(int i=structure[hidden_layers+1]-1; i>=0; i--)
+        printf("%lf ", desired[i][0]);
+      printf("\n\n");
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // forward pass
@@ -368,9 +401,13 @@ int train_neural_network(int max_epoch,
         copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
         in = out;
       }
+      // back propagation
+      double** out = in;
+      double** err = matrix_addition(desired, structure[hidden_layers+1], 1, out, structure[hidden_layers+1],1,1);
       
-      // reset output
-      desired[output_vector[perm[n]]][0] = 0;
+      for(int i=hidden_layers; i>=0; i--){
+
+      }
     }
   }
   // free variables
@@ -450,7 +487,7 @@ int main(){
   structure[0] = 3;
   structure[1] = 5;
   structure[2] = 4;
-  structure[3] = 8;
+  structure[3] = 3;
   //structure[4] = 2;
 
   int hidden_layers = 2;
@@ -482,7 +519,7 @@ int main(){
   input_matrix[7][0] = 1;
   input_matrix[7][1] = 1;
   input_matrix[7][2] = 1;
-  int* output_vector = (int*) malloc(structure[hidden_layers+1]*sizeof(int));
+  int* output_vector = (int*) malloc((1 << structure[hidden_layers+1])*sizeof(int));
   output_vector[0] = 0;
   output_vector[1] = 6;
   output_vector[2] = 5;
@@ -495,6 +532,7 @@ int main(){
   train_neural_network(max_epoch, instances, structure, hidden_layers, input_matrix, output_vector, learning_rate);
   free_matrix(input_matrix,8,3);
   free(output_vector);
+  printf("%d ",1<<3);
   // double*** NN = initialize_network(structure, 3);
 
   // for(int i=0; i<4; i++){
