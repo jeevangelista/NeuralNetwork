@@ -3,7 +3,7 @@
  * WRITTEN BY: JOHN EROL EVANGELISTA
  *
  **************************************/
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -87,9 +87,11 @@ double** matrix_transposition(double **mat,
  * Matrix addition
  * INPUTS
  * mat1: 2D array of double values
+ * scal1: scalar value to be added
  * mat1_row: number of rows of mat1
  * mat1_col: number of columns of mat1
  * mat2: 2D array of double values
+ * scal2: scalar value
  * mat2_row: number of rows of mat2
  * mat2_col: number of columns of mat2
  * subtract: do subtraction instead
@@ -97,9 +99,11 @@ double** matrix_transposition(double **mat,
  * sum: 2D matrix of products
  */
 double** matrix_addition(double **mat1,
+                         double scal1,
                          int mat1_row,
                          int mat1_col,
                          double **mat2,
+                         double scal2,
                          int mat2_row,
                          int mat2_col,
                          int subtract){
@@ -120,7 +124,16 @@ double** matrix_addition(double **mat1,
   // Addition
   for(int i=0; i<mat1_row; i++)
     for(int j=0; j<mat1_col; j++)
-      sum[i][j] = mat1[i][j] + (subtract_flag * mat2[i][j]);
+      if(scal1 && scal2){
+        sum[i][j] = scal1 + (subtract * scal2);
+      }
+      else if(scal1){
+        sum[i][j] = scal1 + (subtract_flag * mat2[i][j]);  
+      }else if(scal2){
+        sum[i][j] = mat1[i][j] + (subtract_flag * scal2);
+      }else{
+        sum[i][j] = mat1[i][j] + (subtract_flag * mat2[i][j]);
+      }
 
   return sum;
 }
@@ -130,6 +143,7 @@ double** matrix_addition(double **mat1,
  * Pointwise multiplication
  * INPUTS
  * mat1: 2D array of double values
+ * scal: scalar to be multiplied, commutative
  * mat1_row: number of rows of mat1
  * mat1_col: number of columns of mat1
  * mat2: 2D array of double values
@@ -139,6 +153,7 @@ double** matrix_addition(double **mat1,
  * product: 2D matrix of products
  */
 double** pointwise_multiplication(double **mat1,
+                                  double scal,
                                   int mat1_row,
                                   int mat1_col,
                                   double **mat2,
@@ -158,8 +173,16 @@ double** pointwise_multiplication(double **mat1,
   
   // Sigmoid
   for(int i=0; i<mat1_row; i++)
-    for(int j=0; j<mat1_col; j++)
-      product[i][j] = mat1[i][j] * mat2[i][j];
+    for(int j=0; j<mat1_col; j++){
+      if(scal && !mat1)
+        product[i][j] = scal * mat2[i][j];
+      else if(!scal && mat1)
+        product[i][j] = mat1[i][j] * mat2[i][j];
+      else{
+        fprintf(stderr, "ERROR: Scalar or pointwise matrix multiplication? I'm confused!");
+        exit(EXIT_FAILURE);
+      }
+    }
 
   return product;
 }
@@ -276,18 +299,7 @@ double** initialize_matrix(int row, int col, int zero_flag){
 
 
 /*
- * Pointwise multiplication
- * INPUTS
- * src: 2D array of double values
- * src_vector: 1D array of double values
- * src_row: number of rows of src
- * src_col: number of columns of src
- * dest: 2D array of double values
- * dest_vector: 1D array of double values
- * dest_row: number of rows of dest
- * dest_col: number of columns of dest
- * OUTPUT
- * product: 2D matrix of products
+ * Copy pointer
  */
 void copy_pointer(double **src,
                   double *src_vector,
@@ -359,6 +371,8 @@ void set_output_nodes(int value, int node_num, double** out){
  * input_matrix: input matrix
  * output_vector: list of expected outputs
  * learning_rate: learning rate
+ * structure = [input,h1,h2,...,hn,output]
+ * NN, out_NN = [h1,h2,...,hn,output]
  */
 int train_neural_network(int max_epoch,
                           int instances,
@@ -381,10 +395,7 @@ int train_neural_network(int max_epoch,
     for(int n=0; n<instances; n++){
       // Pick an input and out output randomly
       set_output_nodes(output_vector[perm[n]], structure[hidden_layers+1], desired);
-      printf("%d: ",output_vector[perm[n]]);
-      for(int i=structure[hidden_layers+1]-1; i>=0; i--)
-        printf("%lf ", desired[i][0]);
-      printf("\n\n");
+
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // forward pass
@@ -393,7 +404,7 @@ int train_neural_network(int max_epoch,
         copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
         double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
         free_matrix(in,structure[i],1);
-        double** v_add = matrix_addition(v_mul,structure[i+1],1,layer_bias,structure[i+1],1,0);
+        double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
         free_matrix(v_mul,structure[i+1],1);
         double** out = matrix_sigmoid(v_add, structure[i+1],1);
         free_matrix(v_add,structure[i+1],1);
@@ -403,10 +414,48 @@ int train_neural_network(int max_epoch,
       }
       // back propagation
       double** out = in;
-      double** err = matrix_addition(desired, structure[hidden_layers+1], 1, out, structure[hidden_layers+1],1,1);
+      double** err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
       
-      for(int i=hidden_layers; i>=0; i--){
+      double** delta;
 
+      for(int i=hidden_layers; i>=0; i--){
+        // output layer
+        if(i==hidden_layers){
+          // compute delta
+          double** mult_result = pointwise_multiplication(err, 0, structure[i+1], 1, out, structure[i+1], 1);
+          double** sub_result = matrix_addition(NULL, 1, structure[i+1], 1, out, 0, structure[i+1], 1, 1);
+          delta = pointwise_multiplication(mult_result, 0, structure[i+1], 1, sub_result, structure[i+1], 1);
+          // compute new weights
+          double** mult_result2 = pointwise_multiplication(NULL, learning_rate, structure[i+1], 1, delta, structure[i+1], 1);
+          double** prev_layer_out = initialize_matrix(structure[i], 1, 0);
+          copy_pointer(NULL, out_NN[i-1], structure[i], 0, prev_layer_out, NULL, structure[i], 1); // out_NN[i-1] -> kasama output lang no input, so pag i=hidden layer i is pointing sa output i-1 sa hidden layer before it, shift ng 1 sa structure
+          double** transpose = matrix_transposition(prev_layer_out, structure[i], 1);
+          double** delta_mult = matrix_multiplication(mult_result2, structure[i+1], 1, transpose, 1, structure[i]);
+          double** new_weight = matrix_addition(NN[i], 0, structure[i+1], structure[i], delta_mult, 0, structure[i+1], structure[i], 0);
+          copy_pointer(new_weight, NULL, structure[i+1], structure[i], NN[i], NULL, structure[i+1], structure[i]);
+          
+          // compute biases
+          double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
+          copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
+          double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, delta_mult, 0, structure[i+1], 1, 0);
+          copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);
+
+          // free variables
+          free_matrix(mult_result, structure[i+1], 1);
+          free_matrix(sub_result, structure[i+1], 1);
+          free_matrix(mult_result2, structure[i+1], 1);
+          free_matrix(out, structure[i+1], 1);
+          free_matrix(transpose, 1, structure[i]);
+          free_matrix(delta_mult, structure[i+1], structure[i]);
+          free_matrix(new_weight, structure[i+1], structure[i]);
+          free_matrix(layer_bias, structure[i+1],1);
+          free_matrix(new_bias, structure[i+1],1);
+
+          out = prev_layer_out;
+          for(int j=0; j<structure[i+1]; j++)
+            printf("%lf ", bias[i][j]);
+          printf("\n\n");
+        }
       }
     }
   }
