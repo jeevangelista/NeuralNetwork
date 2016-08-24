@@ -392,6 +392,7 @@ int train_neural_network(int max_epoch,
   double** desired = initialize_matrix(structure[hidden_layers+1], 1, 1);
   for(int iter=0; iter<max_epoch; iter++){
     int* perm = shuffle(instances);
+    double** err;
     for(int n=0; n<instances; n++){
       // Pick an input and out output randomly
       set_output_nodes(output_vector[perm[n]], structure[hidden_layers+1], desired);
@@ -414,7 +415,7 @@ int train_neural_network(int max_epoch,
       }
       // back propagation
       double** out = in;
-      double** err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
+      err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
       
       double** delta;
 
@@ -454,14 +455,7 @@ int train_neural_network(int max_epoch,
         double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
         copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
         double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, delta_mult, 0, structure[i+1], 1, 0);
-        copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);
-        for(int j=0; j<structure[i+1]; j++){
-          for(int k=0; k<structure[i]; k++){
-            printf("%lf ", NN[i][j][k]);
-          }
-          printf("\n");
-        }
-          printf("\n\n");        
+        copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);        
         // free variables
         free_matrix(mult_result2, structure[i+1], 1);
         free_matrix(out, structure[i+1], 1);
@@ -473,6 +467,19 @@ int train_neural_network(int max_epoch,
         out = prev_layer_out;
       }
       free_matrix(out, structure[0], 1);
+    }
+    double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
+    // sum errors
+    for(int i=0; i<structure[hidden_layers+1];i++){
+      totalerr[iter] += err_mult[i][0];
+    }
+    // Print update
+    if(iter%500 == 0)
+      printf("Itereration: %d Error: %lf\n", iter, totalerr[iter]);
+    // stopping condition
+    if(totalerr[iter]<0.001){
+      printf("Completed after %d iterations", iter);
+      break;
     }
   }
   // free variables
@@ -552,11 +559,10 @@ int main(){
   structure[0] = 3;
   structure[1] = 6;
   structure[2] = 5;
-  structure[3] = 4;
-  structure[4] = 3;
+  structure[3] = 3;
   //structure[4] = 2;
 
-  int hidden_layers = 3;
+  int hidden_layers = 2;
   int max_epoch = 10000;
   int instances = 8;
   double learning_rate = 0.1;
