@@ -425,38 +425,54 @@ int train_neural_network(int max_epoch,
           double** mult_result = pointwise_multiplication(err, 0, structure[i+1], 1, out, structure[i+1], 1);
           double** sub_result = matrix_addition(NULL, 1, structure[i+1], 1, out, 0, structure[i+1], 1, 1);
           delta = pointwise_multiplication(mult_result, 0, structure[i+1], 1, sub_result, structure[i+1], 1);
-          // compute new weights
-          double** mult_result2 = pointwise_multiplication(NULL, learning_rate, structure[i+1], 1, delta, structure[i+1], 1);
-          double** prev_layer_out = initialize_matrix(structure[i], 1, 0);
-          copy_pointer(NULL, out_NN[i-1], structure[i], 0, prev_layer_out, NULL, structure[i], 1); // out_NN[i-1] -> kasama output lang no input, so pag i=hidden layer i is pointing sa output i-1 sa hidden layer before it, shift ng 1 sa structure
-          double** transpose = matrix_transposition(prev_layer_out, structure[i], 1);
-          double** delta_mult = matrix_multiplication(mult_result2, structure[i+1], 1, transpose, 1, structure[i]);
-          double** new_weight = matrix_addition(NN[i], 0, structure[i+1], structure[i], delta_mult, 0, structure[i+1], structure[i], 0);
-          copy_pointer(new_weight, NULL, structure[i+1], structure[i], NN[i], NULL, structure[i+1], structure[i]);
           
-          // compute biases
-          double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
-          copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
-          double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, delta_mult, 0, structure[i+1], 1, 0);
-          copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);
-
           // free variables
           free_matrix(mult_result, structure[i+1], 1);
           free_matrix(sub_result, structure[i+1], 1);
-          free_matrix(mult_result2, structure[i+1], 1);
-          free_matrix(out, structure[i+1], 1);
-          free_matrix(transpose, 1, structure[i]);
-          free_matrix(delta_mult, structure[i+1], structure[i]);
-          free_matrix(new_weight, structure[i+1], structure[i]);
-          free_matrix(layer_bias, structure[i+1],1);
-          free_matrix(new_bias, structure[i+1],1);
 
-          out = prev_layer_out;
-          for(int j=0; j<structure[i+1]; j++)
-            printf("%lf ", bias[i][j]);
-          printf("\n\n");
+        }else{
+          double** sub_result = matrix_addition(NULL, 1, structure[i+1], 1, out, 0, structure[i+1], 1, 1);
+          double** weight_next_transpose = matrix_transposition(NN[i+1], structure[i+2], structure[i+1]);
+          double** weight_prevdelta_mult = matrix_multiplication(weight_next_transpose, structure[i+1], structure[i+2], delta, structure[i+2], 1);
+          free_matrix(delta, structure[i+2], 1);
+          double** mult_out = pointwise_multiplication(out, 0, structure[i+1], 1, sub_result, structure[i+1], 1);
+          delta = pointwise_multiplication(mult_out, 0, structure[i+1], 1, weight_prevdelta_mult, structure[i+1], 1);
         }
+        // compute new weights
+        double** mult_result2 = pointwise_multiplication(NULL, learning_rate, structure[i+1], 1, delta, structure[i+1], 1);
+        double** prev_layer_out = initialize_matrix(structure[i], 1, 0);
+        if(i==0)
+          copy_pointer(NULL, input_matrix[perm[n]], structure[i], 0, prev_layer_out, NULL, structure[i], 1);
+        else
+          copy_pointer(NULL, out_NN[i-1], structure[i], 0, prev_layer_out, NULL, structure[i], 1); // out_NN[i-1] -> kasama output lang no input, so pag i=hidden layer i is pointing sa output i-1 sa hidden layer before it, shift ng 1 sa structure
+        double** transpose = matrix_transposition(prev_layer_out, structure[i], 1);
+        double** delta_mult = matrix_multiplication(mult_result2, structure[i+1], 1, transpose, 1, structure[i]);
+        double** new_weight = matrix_addition(NN[i], 0, structure[i+1], structure[i], delta_mult, 0, structure[i+1], structure[i], 0);
+        copy_pointer(new_weight, NULL, structure[i+1], structure[i], NN[i], NULL, structure[i+1], structure[i]);
+        
+        // compute biases
+        double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
+        copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
+        double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, delta_mult, 0, structure[i+1], 1, 0);
+        copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);
+        for(int j=0; j<structure[i+1]; j++){
+          for(int k=0; k<structure[i]; k++){
+            printf("%lf ", NN[i][j][k]);
+          }
+          printf("\n");
+        }
+          printf("\n\n");        
+        // free variables
+        free_matrix(mult_result2, structure[i+1], 1);
+        free_matrix(out, structure[i+1], 1);
+        free_matrix(transpose, 1, structure[i]);
+        free_matrix(delta_mult, structure[i+1], structure[i]);
+        free_matrix(new_weight, structure[i+1], structure[i]);
+        free_matrix(layer_bias, structure[i+1],1);
+        free_matrix(new_bias, structure[i+1],1);
+        out = prev_layer_out;
       }
+      free_matrix(out, structure[0], 1);
     }
   }
   // free variables
@@ -534,12 +550,13 @@ int main(){
 
   int* structure = (int*) calloc(4, sizeof(int));
   structure[0] = 3;
-  structure[1] = 5;
-  structure[2] = 4;
-  structure[3] = 3;
+  structure[1] = 6;
+  structure[2] = 5;
+  structure[3] = 4;
+  structure[4] = 3;
   //structure[4] = 2;
 
-  int hidden_layers = 2;
+  int hidden_layers = 3;
   int max_epoch = 10000;
   int instances = 8;
   double learning_rate = 0.1;
@@ -581,7 +598,6 @@ int main(){
   train_neural_network(max_epoch, instances, structure, hidden_layers, input_matrix, output_vector, learning_rate);
   free_matrix(input_matrix,8,3);
   free(output_vector);
-  printf("%d ",1<<3);
   // double*** NN = initialize_network(structure, 3);
 
   // for(int i=0; i<4; i++){
