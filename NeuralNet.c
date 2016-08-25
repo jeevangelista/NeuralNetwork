@@ -348,15 +348,14 @@ void set_output_nodes(int value, int node_num, double** out){
     fprintf(stderr, "ERROR: Number of nodes not enough to represent output!\n");
     exit(EXIT_FAILURE);
   }
-  
   for(int i=node_num-1; i>=0; i--){
     int pow = 1<< i;
     int quotient = value/pow;
     value = value%pow;
     if(quotient)
-      out[i][0]=1;
+      out[node_num-1-i][0]=1;
     else
-      out[i][0]=0;
+      out[node_num-1-i][0]=0;
   }
 }
 
@@ -400,6 +399,7 @@ int train_neural_network(int max_epoch,
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // forward pass
+      double** out;
       for(int i=0; i<=hidden_layers; i++){
         double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
         copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
@@ -407,14 +407,13 @@ int train_neural_network(int max_epoch,
         free_matrix(in,structure[i],1);
         double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
         free_matrix(v_mul,structure[i+1],1);
-        double** out = matrix_sigmoid(v_add, structure[i+1],1);
+        out = matrix_sigmoid(v_add, structure[i+1],1);
         free_matrix(v_add,structure[i+1],1);
         free_matrix(layer_bias,structure[i+1],1);
         copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
         in = out;
       }
       // back propagation
-      double** out = in;
       err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
       
       double** delta;
@@ -454,7 +453,7 @@ int train_neural_network(int max_epoch,
         // compute biases
         double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
         copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
-        double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, delta_mult, 0, structure[i+1], 1, 0);
+        double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, mult_result2, 0, structure[i+1], 1, 0);
         copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);        
         // free variables
         free_matrix(mult_result2, structure[i+1], 1);
@@ -467,18 +466,28 @@ int train_neural_network(int max_epoch,
         out = prev_layer_out;
       }
       free_matrix(out, structure[0], 1);
+      // double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
+      // // sum errors for mean square
+      // for(int i=0; i<structure[hidden_layers+1];i++){
+      //   totalerr[iter] += err_mult[i][0];
+      // }
     }
+    // last lang
     double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
     // sum errors
     for(int i=0; i<structure[hidden_layers+1];i++){
       totalerr[iter] += err_mult[i][0];
     }
+
+    // Mean square mas tama ata ito???
+    // Tho mas tama ata yung mean square ng validation set
+    //totalerr[iter] = totalerr[iter]/instances;
     // Print update
     if(iter%500 == 0)
       printf("Itereration: %d Error: %lf\n", iter, totalerr[iter]);
     // stopping condition
     if(totalerr[iter]<0.001){
-      printf("Completed after %d iterations", iter);
+      printf("Completed after %d iterations. Error is %lf\n", iter, totalerr[iter]);
       break;
     }
   }
@@ -557,37 +566,44 @@ int main(){
 
   int* structure = (int*) calloc(4, sizeof(int));
   structure[0] = 3;
-  structure[1] = 6;
+  structure[1] = 7;
   structure[2] = 5;
   structure[3] = 3;
   //structure[4] = 2;
 
   int hidden_layers = 2;
-  int max_epoch = 10000;
+  int max_epoch = 50000;
   int instances = 8;
   double learning_rate = 0.1;
   double** input_matrix = initialize_matrix(instances, 3, 0);
   input_matrix[0][0] = 0;
   input_matrix[0][1] = 0;
   input_matrix[0][2] = 0;
-  input_matrix[1][0] = 1;
+
+  input_matrix[1][0] = 0;
   input_matrix[1][1] = 0;
-  input_matrix[1][2] = 0;
+  input_matrix[1][2] = 1;
+  
   input_matrix[2][0] = 0;
   input_matrix[2][1] = 1;
   input_matrix[2][2] = 0;
-  input_matrix[3][0] = 1;
+  
+  input_matrix[3][0] = 0;
   input_matrix[3][1] = 1;
-  input_matrix[3][2] = 0;
-  input_matrix[4][0] = 0;
+  input_matrix[3][2] = 1;
+  
+  input_matrix[4][0] = 1;
   input_matrix[4][1] = 0;
-  input_matrix[4][2] = 1;
+  input_matrix[4][2] = 0;
+  
   input_matrix[5][0] = 1;
   input_matrix[5][1] = 0;
   input_matrix[5][2] = 1;
-  input_matrix[6][0] = 0;
+  
+  input_matrix[6][0] = 1;
   input_matrix[6][1] = 1;
-  input_matrix[6][2] = 1;
+  input_matrix[6][2] = 0;
+  
   input_matrix[7][0] = 1;
   input_matrix[7][1] = 1;
   input_matrix[7][2] = 1;
