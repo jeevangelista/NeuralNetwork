@@ -365,20 +365,25 @@ void set_output_nodes(int value, int node_num, double** out){
  * INPUTS
  * max_epoch: maximum number of epochs
  * inputs: number of inputs of the network
- * instances: number of input instances
+ * train_instances: number of input train_instances
  * outputs: number of output outcomes
- * input_matrix: input matrix
- * output_vector: list of expected outputs
+ * train_input_matrix: input matrix
+ * train_output_vector: list of expected outputs
+ * validation_input_matrix: input matrix
+ * validation_output_vector: list of expected outputs
  * learning_rate: learning rate
  * structure = [input,h1,h2,...,hn,output]
  * NN, out_NN = [h1,h2,...,hn,output]
  */
 int train_neural_network(int max_epoch,
-                          int instances,
                           int* structure,
                           int hidden_layers,
-                          double** input_matrix, 
-                          int* output_vector,
+                          int train_instances,
+                          double** train_input_matrix, 
+                          int* train_output_vector,
+                          int validation_instances,
+                          double** validation_input_matrix, 
+                          int* validation_output_vector,
                           double learning_rate){
 
   // initialize network weights
@@ -390,14 +395,14 @@ int train_neural_network(int max_epoch,
   double* totalerr = (double*) calloc(max_epoch, sizeof(double)); // calloc initializes to zero
   double** desired = initialize_matrix(structure[hidden_layers+1], 1, 1);
   for(int iter=0; iter<max_epoch; iter++){
-    int* perm = shuffle(instances);
+    int* perm = shuffle(train_instances);
     double** err;
-    for(int n=0; n<instances; n++){
+    for(int n=0; n<train_instances; n++){
       // Pick an input and out output randomly
-      set_output_nodes(output_vector[perm[n]], structure[hidden_layers+1], desired);
+      set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], desired);
 
       double** in = initialize_matrix(structure[0],1, 0);
-      copy_pointer(NULL, input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
+      copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // forward pass
       double** out;
       for(int i=0; i<=hidden_layers; i++){
@@ -442,7 +447,7 @@ int train_neural_network(int max_epoch,
         double** mult_result2 = pointwise_multiplication(NULL, learning_rate, structure[i+1], 1, delta, structure[i+1], 1);
         double** prev_layer_out = initialize_matrix(structure[i], 1, 0);
         if(i==0)
-          copy_pointer(NULL, input_matrix[perm[n]], structure[i], 0, prev_layer_out, NULL, structure[i], 1);
+          copy_pointer(NULL, train_input_matrix[perm[n]], structure[i], 0, prev_layer_out, NULL, structure[i], 1);
         else
           copy_pointer(NULL, out_NN[i-1], structure[i], 0, prev_layer_out, NULL, structure[i], 1); // out_NN[i-1] -> kasama output lang no input, so pag i=hidden layer i is pointing sa output i-1 sa hidden layer before it, shift ng 1 sa structure
         double** transpose = matrix_transposition(prev_layer_out, structure[i], 1);
@@ -472,16 +477,47 @@ int train_neural_network(int max_epoch,
       //   totalerr[iter] += err_mult[i][0];
       // }
     }
-    // last lang
-    double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
-    // sum errors
-    for(int i=0; i<structure[hidden_layers+1];i++){
-      totalerr[iter] += err_mult[i][0];
-    }
 
-    // Mean square mas tama ata ito???
-    // Tho mas tama ata yung mean square ng validation set
-    //totalerr[iter] = totalerr[iter]/instances;
+    // validation stage
+    for(int n=0; n<validation_instances; n++){
+      // Pick an input and out output
+      set_output_nodes(validation_output_vector[n], structure[hidden_layers+1], desired);
+
+      double** in = initialize_matrix(structure[0],1, 0);
+      copy_pointer(NULL, validation_input_matrix[n], structure[0], 0, in, NULL, structure[0], 1);
+      
+      // forward pass
+      double** out;
+      for(int i=0; i<=hidden_layers; i++){
+        double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
+        copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
+        double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
+        free_matrix(in,structure[i],1);
+        double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
+        free_matrix(v_mul,structure[i+1],1);
+        out = matrix_sigmoid(v_add, structure[i+1],1);
+        free_matrix(v_add,structure[i+1],1);
+        free_matrix(layer_bias,structure[i+1],1);
+        copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
+        in = out;
+      }
+      double** err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
+      // last lang
+      double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
+      // sum errors
+      for(int i=0; i<structure[hidden_layers+1];i++){
+        totalerr[iter] += err_mult[i][0];
+      }
+    }
+    // // last lang
+    // double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
+    // // sum errors
+    // for(int i=0; i<structure[hidden_layers+1];i++){
+    //   totalerr[iter] += err_mult[i][0];
+    // }
+
+    // Mean square
+    totalerr[iter] = totalerr[iter]/train_instances;
     // Print update
     if(iter%500 == 0)
       printf("Itereration: %d Error: %lf\n", iter, totalerr[iter]);
@@ -573,9 +609,9 @@ int main(){
 
   int hidden_layers = 2;
   int max_epoch = 50000;
-  int instances = 8;
+  int train_instances = 8;
   double learning_rate = 0.1;
-  double** input_matrix = initialize_matrix(instances, 3, 0);
+  double** input_matrix = initialize_matrix(train_instances, 3, 0);
   input_matrix[0][0] = 0;
   input_matrix[0][1] = 0;
   input_matrix[0][2] = 0;
@@ -617,7 +653,7 @@ int main(){
   output_vector[6] = 6;
   output_vector[7] = 0;
 
-  train_neural_network(max_epoch, instances, structure, hidden_layers, input_matrix, output_vector, learning_rate);
+  train_neural_network(max_epoch, structure, hidden_layers, train_instances, input_matrix, output_vector, train_instances, input_matrix, output_vector, learning_rate);
   free_matrix(input_matrix,8,3);
   free(output_vector);
   // double*** NN = initialize_network(structure, 3);
