@@ -360,6 +360,20 @@ void set_output_nodes(int value, int node_num, double** out){
 }
 
 
+/* 
+ * set values of output nodes
+ */
+int get_output_in_decimal(int node_num, double** out){
+  int val = 0;
+  for(int i=node_num-1; i>=0; i--){
+    int pow = 1<< i;
+    if(out[node_num-1-i][0]>0.5)
+      val = val+pow;
+  }
+  return val;
+}
+
+
 /*
  * Train Neural Networks
  * INPUTS
@@ -497,7 +511,6 @@ void train_neural_network(int max_epoch,
         out = matrix_sigmoid(v_add, structure[i+1],1);
         free_matrix(v_add,structure[i+1],1);
         free_matrix(layer_bias,structure[i+1],1);
-        copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
         in = out;
       }
       double** err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
@@ -516,7 +529,7 @@ void train_neural_network(int max_epoch,
     // }
 
     // Mean square
-    totalerr[iter] = totalerr[iter]/train_instances;
+    totalerr[iter] = totalerr[iter]/validation_instances;
     // Print update
     if(iter%500 == 0)
       printf("Iteration: %d Error: %lf\n", iter, totalerr[iter]);
@@ -526,22 +539,38 @@ void train_neural_network(int max_epoch,
       break;
     }
   }
-  for(int i=0; i<hidden_layers+1; i++){
-    for(int j=0; j<structure[i+1]; j++){
-      for(int k=0; k<structure[i]; k++){
-        printf("%lf ", NN[i][j][k]);
-      }
-      printf("\n");
-    }
-      printf("\n");
-  }
-  printf("*****************************\n\n");
   // free variables
   free(totalerr);
   free(desired);
-
  }
 
+
+void test_neural_net(int* structure,
+                     int hidden_layers,
+                     int test_instances,
+                     double** test_input_matrix,
+                     double*** NN,
+                     double** bias){
+  for(int n=0; n<test_instances; n++){
+    double** out;
+    double** in = initialize_matrix(structure[0],1, 0);
+    copy_pointer(NULL, test_input_matrix[n], structure[0], 0, in, NULL, structure[0], 1);  
+    for(int i=0; i<=hidden_layers; i++){
+      double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
+      copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
+      double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
+      free_matrix(in,structure[i],1);
+      double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
+      free_matrix(v_mul,structure[i+1],1);
+      out = matrix_sigmoid(v_add, structure[i+1],1);
+      free_matrix(v_add,structure[i+1],1);
+      free_matrix(layer_bias,structure[i+1],1);
+      in = out;
+    }
+    int output = get_output_in_decimal(structure[hidden_layers+1],out);
+    printf("%d\n",output);
+  }
+}
 
 int main(){
   // seed for randomness
@@ -655,17 +684,15 @@ int main(){
   double*** NN = initialize_network(structure, hidden_layers);
   double** bias = initialize_bias(structure, hidden_layers);
   train_neural_network(max_epoch, structure, hidden_layers, train_instances, input_matrix, output_vector, train_instances, input_matrix, output_vector, learning_rate, NN, bias);
+  test_neural_net(structure, hidden_layers, train_instances, input_matrix, NN, bias);
   free_matrix(input_matrix,8,3);
   free(output_vector);
   for(int i=0; i<hidden_layers+1; i++){
     for(int j=0; j<structure[i+1]; j++){
       for(int k=0; k<structure[i]; k++){
-        printf("%lf ", NN[i][j][k]);
       }
-      printf("\n");
       free(NN[i][j]);
     }
-      printf("\n");
       free(NN[i]);
   }
   free(NN);
