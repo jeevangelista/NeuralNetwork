@@ -375,7 +375,7 @@ void set_output_nodes(int value, int node_num, double** out){
  * structure = [input,h1,h2,...,hn,output]
  * NN, out_NN = [h1,h2,...,hn,output]
  */
-int train_neural_network(int max_epoch,
+void train_neural_network(int max_epoch,
                           int* structure,
                           int hidden_layers,
                           int train_instances,
@@ -384,11 +384,10 @@ int train_neural_network(int max_epoch,
                           int validation_instances,
                           double** validation_input_matrix, 
                           int* validation_output_vector,
-                          double learning_rate){
+                          double learning_rate,
+                          double*** NN,
+                          double** bias){
 
-  // initialize network weights
-  double*** NN = initialize_network(structure, hidden_layers);
-  double** bias = initialize_bias(structure, hidden_layers);
   double** out_NN = initialize_outputs(structure, hidden_layers);
 
   // initialize other variables
@@ -520,28 +519,27 @@ int train_neural_network(int max_epoch,
     totalerr[iter] = totalerr[iter]/train_instances;
     // Print update
     if(iter%500 == 0)
-      printf("Itereration: %d Error: %lf\n", iter, totalerr[iter]);
+      printf("Iteration: %d Error: %lf\n", iter, totalerr[iter]);
     // stopping condition
     if(totalerr[iter]<0.001){
       printf("Completed after %d iterations. Error is %lf\n", iter, totalerr[iter]);
       break;
     }
   }
-  // free variables
   for(int i=0; i<hidden_layers+1; i++){
     for(int j=0; j<structure[i+1]; j++){
-      free(NN[i][j]);
+      for(int k=0; k<structure[i]; k++){
+        printf("%lf ", NN[i][j][k]);
+      }
+      printf("\n");
     }
-      free(NN[i]);
+      printf("\n");
   }
-  free(NN);
-  for(int i=0; i<hidden_layers+1; i++)
-    free(bias[i]);
-  free(bias);
+  printf("*****************************\n\n");
+  // free variables
   free(totalerr);
   free(desired);
 
-  return 0;
  }
 
 
@@ -653,9 +651,27 @@ int main(){
   output_vector[6] = 6;
   output_vector[7] = 0;
 
-  train_neural_network(max_epoch, structure, hidden_layers, train_instances, input_matrix, output_vector, train_instances, input_matrix, output_vector, learning_rate);
+  // initialize network weights
+  double*** NN = initialize_network(structure, hidden_layers);
+  double** bias = initialize_bias(structure, hidden_layers);
+  train_neural_network(max_epoch, structure, hidden_layers, train_instances, input_matrix, output_vector, train_instances, input_matrix, output_vector, learning_rate, NN, bias);
   free_matrix(input_matrix,8,3);
   free(output_vector);
+  for(int i=0; i<hidden_layers+1; i++){
+    for(int j=0; j<structure[i+1]; j++){
+      for(int k=0; k<structure[i]; k++){
+        printf("%lf ", NN[i][j][k]);
+      }
+      printf("\n");
+      free(NN[i][j]);
+    }
+      printf("\n");
+      free(NN[i]);
+  }
+  free(NN);
+  for(int i=0; i<hidden_layers+1; i++)
+    free(bias[i]);
+  free(bias);
   // double*** NN = initialize_network(structure, 3);
 
   // for(int i=0; i<4; i++){
