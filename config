@@ -1,0 +1,15 @@
+# CONFIG FILE FOR SIMPLE NEURAL NET
+TrainFile=train.csv
+DesiredTrainOutFile=DesiredTrainOut.csv
+TrainInstances=1000
+ValidationFile=validation.csv
+DesiredValidationOutFile=DesiredValidationOut.csv
+ValidationInstances=200
+TestFile=test.csv
+TestOutFile=TestOut.csv
+TestInstances=300
+TotalErrFile=TotalErr.csv
+HiddenLayers=2
+Structure=3 7 5 3
+LearningRate=0.1
+MaxEpoch=50000

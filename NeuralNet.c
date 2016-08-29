@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
+
 
 /*
  * Returns a random number from zero to one
@@ -374,6 +376,15 @@ int get_output_in_decimal(int node_num, double** out){
 }
 
 
+/* 
+ *determines if string contains prefix
+ */
+int check_prefix(const char *prefix, const char *str)
+{
+    return strncmp(prefix, str, strlen(prefix)) == 0;
+}
+
+
 /*
  * Train Neural Networks
  * INPUTS
@@ -572,72 +583,125 @@ void test_neural_net(int* structure,
   }
 }
 
-int main(){
+/*
+ * PARAMS
+ * --train-file train_file
+ * --train-output desired output of train data
+ * --train-instances number of training instances
+ * --validation-file validation_file
+ * --validation-instances number of validation instances
+ * --validation-output desired output of validation file
+ * --test-file test_file
+ * --test-instances number of testing instances
+ * --output output name for test file
+ * --structure comma separated no space sequence of numbers
+ * --learning-rate learning rate
+ * --max-epoch max_epoch
+ * --help help file
+ */
+int main(int argc, char *argv[]){
   // seed for randomness
   time_t t;
   srand((unsigned) time(&t));
 
-  // double* A = (double*) calloc(3, sizeof(double)); // allocate matrix pointer
-  // // for(int i=0; i<3; i++)
-  // //   A[i] = (double*) calloc(1, sizeof(double)); // allocate each element
+  // Declare Variables
+  char train_file[255];
+  char desired_train_out[255];
+  int train_instances;
+  char validation_file[255];
+  char desired_validation_out[255];
+  int validation_instances;
+  char test_file[255];
+  char desired_test_out[255];
+  int test_instances;
+  char test_out[255];
+  char total_err_file[255];
+  int hidden_layers;
+  char struct_string[255];
+  int* structure;
+  double learning_rate;
+  int max_epoch;
+  char weights_file[255];
+  char bias_file[255];
 
-  // double** B = (double**) calloc(3, sizeof(double*)); // allocate matrix pointer
-  // for(int i=0; i<3; i++)
-  //   B[i] = (double*) calloc(1, sizeof(double)); // allocate each element
-  
-  // A[0] = 0;
-  // A[1] = 1;
-  // A[2] = 2;
+  if(argc<2){
+    fprintf(stderr, "ERROR: Missing config file!\n");
+    exit(EXIT_FAILURE); 
+  }
+  if(argc>2){
+    fprintf(stderr, "ERROR: Too many arguments!\n");
+    exit(EXIT_FAILURE);
+  }
 
-  // A[1][0] = 9;
-  // A[1][1] = 8;
-  // A[1][2] = 7;
+  // Open Config File
+  char* config_file = argv[1];
+  printf("Opening %s \n", config_file);
 
-  // B[0][0] = 6;
-  // B[0][1] = 5;
-  // B[0][2] = 4;
-  // B[1][0] = 3;
-  // B[1][1] = 4;
-  // B[1][2] = 5;
+  FILE* config=fopen(config_file, "r");
+  char line[1000];
+  int count=0;
+  while(fgets(line, 1000, config)){
+    if(line[0]=='#')
+      continue;
+    count++;
+    line[strcspn(line, "\n")] = 0; // remove newline
+    line[strcspn(line, "#")] = 0; //remove comment
+    char*l = line+strcspn(line, "=")+1;
+    if(strlen(l)==0){
+      fprintf(stderr, "ERROR: Missing params: %s? !\n", line);
+      exit(EXIT_FAILURE);
+    }
+    if(check_prefix("TrainFile=", line))
+      strcpy(train_file, l);
+    else if(check_prefix("DesiredTrainOutFile=", line))
+      strcpy(desired_train_out, l);
+    else if(check_prefix("TrainInstances=", line))
+      train_instances = atoi(l);
+    else if(check_prefix("ValidationFile=", line))
+      strcpy(validation_file, l);
+    else if(check_prefix("DesiredValidationOutFile=", line))
+      strcpy(desired_validation_out, l);
+    else if(check_prefix("ValidationInstances=", line))
+      validation_instances = atoi(l);
+    else if(check_prefix("TestFile=", line))
+      strcpy(test_file, l);
+    else if(check_prefix("TestOutFile=", line))
+      strcpy(test_out, l);
+    else if(check_prefix("TestInstances=", line))
+      test_instances = atoi(l);
+    else if(check_prefix("TotalErrFile=", line))
+      strcpy(total_err_file, l);
+    else if(check_prefix("HiddenLayers=", line))
+      hidden_layers = atoi(l);
+    else if(check_prefix("Structure=", line))
+      strcpy(struct_string, l);
+    else if(check_prefix("LearningRate=", line))
+      learning_rate = atof(l);
+    else if(check_prefix("MaxEpoch=", line))
+      max_epoch = atoi(l);
+    else if(check_prefix("WeightsFile=", line))
+      strcpy(weights_file, l);
+    else if(check_prefix("BiasFile=", line))
+      strcpy(bias_file, l);
+  }
+  if(!weights_file[0] && !bias_file[0] &&count<14){
+    fprintf(stderr, "ERROR: Missing params in config file!\n");
+    exit(EXIT_FAILURE);
+  }
+  if(weights_file[0] && bias_file[0] && count<7){ // needs only test file, test out, instances, struct, hl, weights, and bias
+    fprintf(stderr, "ERROR: Missing params in config file!\n");
+    exit(EXIT_FAILURE);
+  }
+  structure = (int*) calloc(hidden_layers + 2, sizeof(int));
+  char* struct_dup = strdup(struct_string);
 
-  // copy_pointer(NULL,A,3,0,B,NULL,3,1);
+  count = 0;
+  char* token;
+  while((token=strsep(&struct_dup, " ")))
+    structure[count++] = atoi(token);
+  free(struct_dup);
 
-  // for(int i=0; i<3; i++){
-  //   for(int j=0; j<1; j++)
-  //     printf("%lf ",B[i][j]);
-  //   printf("\n");
-  // }
-  // free_pointer(NULL,A,3,0);
-  // free_pointer(B,NULL,3,1);
-  
-  // double **C = matrix_transposition(A,2,3);
-  // // sigmoid
-  // for(int i=0; i<3; i++){
-  //   for(int j=0; j<2; j++)
-  //     printf("%lf\t",C[i][j]);
-  //   printf("\n");
-  // }
-  // free(A);
-  // free(B);
-  // free(C);
-  // int n = 10;
-  // int* shuffled = shuffle(n);
-  // for(int i = 0; i<n; i++)
-  //   printf("%d\t", shuffled[i]);
-  // printf("\n");
-  // free(shuffled);
-
-  int* structure = (int*) calloc(4, sizeof(int));
-  structure[0] = 3;
-  structure[1] = 7;
-  structure[2] = 5;
-  structure[3] = 3;
-  //structure[4] = 2;
-
-  int hidden_layers = 2;
-  int max_epoch = 50000;
-  int train_instances = 8;
-  double learning_rate = 0.1;
+  train_instances = 8;
   double** input_matrix = initialize_matrix(train_instances, 3, 0);
   input_matrix[0][0] = 0;
   input_matrix[0][1] = 0;
@@ -681,8 +745,8 @@ int main(){
   output_vector[7] = 0;
 
   // initialize network weights
-  double*** NN = initialize_network(structure, hidden_layers);
-  double** bias = initialize_bias(structure, hidden_layers);
+  // double*** NN = initialize_network(structure, hidden_layers);
+  // double** bias = initialize_bias(structure, hidden_layers);
   train_neural_network(max_epoch, structure, hidden_layers, train_instances, input_matrix, output_vector, train_instances, input_matrix, output_vector, learning_rate, NN, bias);
   test_neural_net(structure, hidden_layers, train_instances, input_matrix, NN, bias);
   free_matrix(input_matrix,8,3);
@@ -699,33 +763,5 @@ int main(){
   for(int i=0; i<hidden_layers+1; i++)
     free(bias[i]);
   free(bias);
-  // double*** NN = initialize_network(structure, 3);
-
-  // for(int i=0; i<4; i++){
-  //   for(int j=0; j<structure[i+1]; j++){
-  //     for(int k=0; k<structure[i]; k++){
-  //       printf("%lf ", NN[i][j][k]);
-  //     }
-  //     printf("\n");
-  //   }
-  //     printf("\n");
-  // }
-  // for(int i=0; i<4; i++){
-  //   for(int j=0; j<structure[i+1]; j++){
-  //     free(NN[i][j]);
-  //   }
-  //     free(NN[i]);
-  // }
-  // free(NN);
-  // double ** bias = initialize_bias(structure, 3);
-  // for(int i=0; i<4; i++){
-  //   for(int j=0; j< structure[i+1]; j++){
-  //     printf("%lf ", bias[i][j]);
-  //   }
-  //   printf("\n\n");
-  // }
-  // for(int i=0; i<4; i++)
-  //   free(bias[i]);
-  // free(bias);
   return 0;
 }
