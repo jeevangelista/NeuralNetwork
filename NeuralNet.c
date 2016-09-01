@@ -9,6 +9,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <limits.h>
 #define cell_length 15
 
 
@@ -419,6 +420,37 @@ void read_dataset(double** matrix, int row, int col, char* filename){
 
 }
 
+void read_labels(int* vector, int out_instances, int out_nodes, char* filename){
+  FILE* labelset = fopen(filename, "r");
+  int bufflen = 20;
+  char line[bufflen];
+  int i=0;
+  int min=INT_MAX;
+  int max=INT_MIN;
+  while(fgets(line, bufflen, labelset)){
+    vector[i] = atoi(line);
+    if(vector[i]<min)
+      min = vector[i];
+    if(vector[i]>max)
+      max = vector[i];
+    i++;
+    if(i>out_instances){
+      fprintf(stderr, "ERROR: Too few allocated out rows!\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  if(pow(2.0,out_nodes) < (max-min)){
+    fprintf(stderr, "ERROR: Too few nodes to represent the outputs!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Adjust the outputs so that they start with zero
+  if(min!=0){
+    for(int i=0; i<out_instances; i++)
+      vector[i]-=min;
+  }
+}
+
 
 /*
  * Train Neural Networks
@@ -670,7 +702,7 @@ int main(int argc, char *argv[]){
 
   // Open Config File
   char* config_file = argv[1];
-  printf("Opening %s \n", config_file);
+  printf("Opening %s %d\n", config_file, INT_MAX);
 
   FILE* config=fopen(config_file, "r");
   char line[5000];
@@ -746,37 +778,36 @@ int main(int argc, char *argv[]){
   }
   free(struct_dup);
 
-  // Copy train and validation dataset
+  // Copy train and validation dataset and labels
   printf("Copying training dataset...\n");
   double** train_matrix = initialize_matrix(train_instances, structure[0], 0);
   double** validation_matrix = initialize_matrix(validation_instances, structure[0], 0);
+  int* train_labels = (int*) malloc(train_instances * sizeof(int));
+  int* validation_labels = (int*) malloc(validation_instances * sizeof(int));
   read_dataset(train_matrix, train_instances, structure[0], train_file);
   read_dataset(validation_matrix, validation_instances, structure[0], validation_file);
-  int* output_vector = (int*) malloc((1 << structure[hidden_layers+1])*sizeof(int));
-
-  output_vector[0] = 0;
-  output_vector[1] = 6;
-  output_vector[2] = 5;
-  output_vector[3] = 3;
-  output_vector[4] = 3;
-  output_vector[5] = 4;
-  output_vector[6] = 6;
-  output_vector[7] = 0;
-
+  read_labels(train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
+  read_labels(validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
+  
   // initialize network weights
   double*** NN = initialize_network(structure, hidden_layers);
 
   double** bias = initialize_bias(structure, hidden_layers);
 
-  //train_neural_network(max_epoch, structure, hidden_layers, train_instances, input_matrix, output_vector, train_instances, input_matrix, output_vector, learning_rate, NN, bias);
+  train_neural_network(max_epoch, structure, hidden_layers, train_instances, train_matrix, train_labels, validation_instances, validation_matrix, validation_labels, learning_rate, NN, bias);
   
   // copy test dataset
   printf("Copying test dataset...\n");
   double** test_matrix = initialize_matrix(test_instances, structure[0], 0);
   read_dataset(test_matrix, test_instances, structure[0], test_file);
-  //test_neural_net(structure, hidden_layers, train_instances, input_matrix, NN, bias);
-  free_matrix(train_matrix,8,3);
-  free(output_vector);
+  test_neural_net(structure, hidden_layers, test_instances, test_matrix, NN, bias);
+  
+  // free variables
+  free_matrix(train_matrix,train_instances, structure[0]);
+  free_matrix(validation_matrix,validation_instances, structure[0]);
+  free_matrix(test_matrix,test_instances, structure[0]);
+  free(train_labels);
+  free(validation_labels);
   for(int i=0; i<hidden_layers+1; i++){
     for(int j=0; j<structure[i+1]; j++){
       for(int k=0; k<structure[i]; k++){
