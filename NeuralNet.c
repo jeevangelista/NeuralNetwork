@@ -47,7 +47,7 @@ double** matrix_multiplication(double **mat1,
   }
 
   // Matrix allocation
-  double** product = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
+  double** product = (double**) calloc(mat1_row, sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
     product[i] = (double*) calloc(mat2_col, sizeof(double)); // allocate each element, calloc to initialize to zero
 
@@ -74,9 +74,9 @@ double** matrix_transposition(double **mat,
                                int mat_row,
                                int mat_col){
   // Matrix allocation
-  double** transpo = (double**) malloc(mat_col * sizeof(double*)); // allocate matrix pointer
+  double** transpo = (double**) calloc(mat_col, sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat_col; i++)
-    transpo[i] = (double*) malloc(mat_row * sizeof(double)); // allocate each element
+    transpo[i] = (double*) calloc(mat_row, sizeof(double)); // allocate each element
 
   // transpositon
   for(int i=0; i<mat_col; i++)
@@ -119,9 +119,9 @@ double** matrix_addition(double **mat1,
   }
 
   // Matrix allocation
-  double** sum = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
+  double** sum = (double**) calloc(mat1_row, sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
-    sum[i] = (double*) malloc(mat1_col * sizeof(double)); // allocate each element
+    sum[i] = (double*) calloc(mat1_col, sizeof(double)); // allocate each element
   int subtract_flag = 1;
   if(subtract)
     subtract_flag = -1;
@@ -171,9 +171,9 @@ double** pointwise_multiplication(double **mat1,
   }
 
   // Matrix allocation
-  double** product = (double**) malloc(mat1_row * sizeof(double*)); // allocate matrix pointer
+  double** product = (double**) calloc(mat1_row, sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat1_row; i++)
-    product[i] = (double*) malloc(mat1_col * sizeof(double)); // allocate each element
+    product[i] = (double*) calloc(mat1_col, sizeof(double)); // allocate each element
   
   // Sigmoid
   for(int i=0; i<mat1_row; i++)
@@ -205,9 +205,9 @@ double** matrix_sigmoid(double **mat,
                                int mat_row,
                                int mat_col){
   // Matrix allocation
-  double** sigmoid = (double**) malloc(mat_row * sizeof(double*)); // allocate matrix pointer
+  double** sigmoid = (double**) calloc(mat_row, sizeof(double*)); // allocate matrix pointer
   for(int i=0; i<mat_row; i++)
-    sigmoid[i] = (double*) malloc(mat_col * sizeof(double)); // allocate each element
+    sigmoid[i] = (double*) calloc(mat_col, sizeof(double)); // allocate each element
 
   // transpositon
   for(int i=0; i<mat_row; i++)
@@ -223,7 +223,7 @@ double** matrix_sigmoid(double **mat,
  * follows the Fisher-Yates algorithm
  */
 int* shuffle(int n){
-  int* shuffled = (int*) malloc(n * sizeof(int));
+  int* shuffled = (int*) calloc(n, sizeof(int));
   for(int i=0; i<n; i++){
     shuffled[i] = i;
   }
@@ -245,11 +245,11 @@ int* shuffle(int n){
  * NN[number of hidden layers+1][node to the right of the edge][node to the left of the edge]
  */
 double*** initialize_network(int* structure, int hidden_layers){
-  double*** NN = (double***) malloc((hidden_layers+1) * sizeof(double**));
+  double*** NN = (double***) calloc((hidden_layers+1), sizeof(double**));
   for(int i=0; i<=hidden_layers; i++){
-    NN[i] = (double**) malloc(structure[i+1] * sizeof(double*));
+    NN[i] = (double**) calloc(structure[i+1], sizeof(double*));
     for(int j=0; j<structure[i+1]; j++){
-      NN[i][j] = (double*) malloc(structure[i] * sizeof(double));
+      NN[i][j] = (double*) calloc(structure[i], sizeof(double));
       for(int k=0; k<structure[i]; k++){
         NN[i][j][k] = random_zero_to_one();
       }
@@ -265,9 +265,9 @@ double*** initialize_network(int* structure, int hidden_layers){
  * hidden_layers: Number of hidden layer
  */
 double** initialize_bias(int* structure, int hidden_layers){
-  double** bias = (double**) malloc((hidden_layers+1) * sizeof(double*));
+  double** bias = (double**) calloc((hidden_layers+1), sizeof(double*));
   for(int i=0; i<=hidden_layers; i++){
-    bias[i] = (double*) malloc(structure[i+1] * sizeof(double));
+    bias[i] = (double*) calloc(structure[i+1], sizeof(double));
     for(int j=0; j<structure[i+1]; j++){
       bias[i][j] = random_zero_to_one();
     }
@@ -283,9 +283,9 @@ double** initialize_bias(int* structure, int hidden_layers){
  * out_NN[number of hidden layers+1][node to the right of the edge][node to the left of the edge]
  */
 double** initialize_outputs(int* structure, int hidden_layers){
-  double** out_NN = (double**) malloc((hidden_layers+1) * sizeof(double*));
+  double** out_NN = (double**) calloc((hidden_layers+1), sizeof(double*));
   for(int i=0; i<=hidden_layers; i++){
-    out_NN[i] = (double*) malloc(structure[i+1] * sizeof(double));
+    out_NN[i] = (double*) calloc(structure[i+1], sizeof(double));
   }
   return out_NN;
 }
@@ -293,12 +293,12 @@ double** initialize_outputs(int* structure, int hidden_layers){
 
 // reserves a block of memory for a matrix
 double** initialize_matrix(int row, int col, int zero_flag){
-  double** matrix = (double**) malloc(row * sizeof(double*));
+  double** matrix = (double**) calloc(row, sizeof(double*));
   for(int i=0; i<row; i++)
     if(zero_flag)
       matrix[i] = (double*) calloc(col, sizeof(double));
     else
-      matrix[i] = (double*) malloc(col * sizeof(double));
+      matrix[i] = (double*) calloc(col, sizeof(double));
   return matrix;
 }
 
@@ -394,11 +394,12 @@ int check_prefix(const char *prefix, const char *str)
 void read_dataset(double** matrix, int row, int col, char* filename){
   FILE* dataset=fopen(filename, "r");
   int bufflen = row * cell_length; // buffer length is number of features times max cell len
-  char line[bufflen];
+  char* line = (char*) calloc(bufflen, sizeof(char));
   // Separate to tokens with comma delimiter
   int i = 0;
   while(fgets(line, bufflen, dataset)){
     char* dup = strdup(line);
+    char* ptr = dup;
     char* token;
     int j = 0;
     while ((token = strsep(&dup, ","))){
@@ -409,18 +410,20 @@ void read_dataset(double** matrix, int row, int col, char* filename){
         exit(EXIT_FAILURE);   
       }
     }
+    free(ptr);
+    dup = NULL;
     i++;
     if(i>row){
       fprintf(stderr, "ERROR: Too few allocated rows!\n");
       exit(EXIT_FAILURE); 
     }
-    free(dup);
   }
+  free(line);
   fclose(dataset);
-
 }
 
-void read_labels(int* vector, int out_instances, int out_nodes, char* filename){
+
+int read_labels(int* vector, int out_instances, int out_nodes, char* filename){
   FILE* labelset = fopen(filename, "r");
   int bufflen = 20;
   char line[bufflen];
@@ -449,6 +452,7 @@ void read_labels(int* vector, int out_instances, int out_nodes, char* filename){
     for(int i=0; i<out_instances; i++)
       vector[i]-=min;
   }
+  return min;
 }
 
 
@@ -478,14 +482,16 @@ void train_neural_network(int max_epoch,
                           int* validation_output_vector,
                           double learning_rate,
                           double*** NN,
-                          double** bias){
+                          double** bias,
+                          char* err_filename){
 
   double** out_NN = initialize_outputs(structure, hidden_layers);
-
+  FILE* err_file = fopen(err_filename, "w");
   // initialize other variables
   double* totalerr = (double*) calloc(max_epoch, sizeof(double)); // calloc initializes to zero
   double** desired = initialize_matrix(structure[hidden_layers+1], 1, 1);
   for(int iter=0; iter<max_epoch; iter++){
+    printf("Iteration %d\n",iter);
     int* perm = shuffle(train_instances);
     double** err;
     for(int n=0; n<train_instances; n++){
@@ -608,6 +614,10 @@ void train_neural_network(int max_epoch,
 
     // Mean square
     totalerr[iter] = totalerr[iter]/validation_instances;
+    char err_str[20];
+    sprintf(err_str, "%lf\n", totalerr[iter]);
+    printf("%s",err_str);
+    fputs(err_str, err_file);
     // Print update
     if(iter%500 == 0)
       printf("Iteration: %d Error: %lf\n", iter, totalerr[iter]);
@@ -620,6 +630,7 @@ void train_neural_network(int max_epoch,
   // free variables
   free(totalerr);
   free(desired);
+  fclose(err_file);
  }
 
 
@@ -628,7 +639,10 @@ void test_neural_net(int* structure,
                      int test_instances,
                      double** test_input_matrix,
                      double*** NN,
-                     double** bias){
+                     double** bias,
+                     int orig_min,
+                     char* out_filename){
+  FILE* out_file = fopen(out_filename, "w");
   for(int n=0; n<test_instances; n++){
     double** out;
     double** in = initialize_matrix(structure[0],1, 0);
@@ -646,8 +660,12 @@ void test_neural_net(int* structure,
       in = out;
     }
     int output = get_output_in_decimal(structure[hidden_layers+1],out);
+    char out_str[20];
+    sprintf(out_str, "%d\n", output + orig_min);
+    fputs(out_str, out_file);
     printf("%d\n",output);
   }
+  fclose(out_file);
 }
 
 /*
@@ -690,6 +708,10 @@ int main(int argc, char *argv[]){
   int max_epoch;
   char weights_file[255];
   char bias_file[255];
+  int orig_min = 0;
+
+  int test_only = 0;
+  FILE *bf, *nf;
 
   if(argc<2){
     fprintf(stderr, "ERROR: Missing config file!\n");
@@ -702,7 +724,7 @@ int main(int argc, char *argv[]){
 
   // Open Config File
   char* config_file = argv[1];
-  printf("Opening %s %d\n", config_file, INT_MAX);
+  printf("Opening %s\n", config_file);
 
   FILE* config=fopen(config_file, "r");
   char line[5000];
@@ -751,17 +773,22 @@ int main(int argc, char *argv[]){
       strcpy(weights_file, l);
     else if(check_prefix("BiasFile=", line))
       strcpy(bias_file, l);
+    else if(check_prefix("OriginalMinimum=", line))
+      orig_min = atoi(l);
   }
 
   // Close file
   fclose(config);
   
   // Check params
-  if(!weights_file[0] && !bias_file[0] &&count<14){
-    fprintf(stderr, "ERROR: Missing params in config file!\n");
-    exit(EXIT_FAILURE);
+  if((nf = fopen(weights_file,"r")) && (bf = fopen(bias_file,"r"))){ // needs only test file, test out, instances, struct, hl, weights, and bias
+    if(count<7){
+      fprintf(stderr, "ERROR: Missing params in config file!\n");
+      exit(EXIT_FAILURE);  
+    }
+    test_only = 1;
   }
-  if(weights_file[0] && bias_file[0] && count<7){ // needs only test file, test out, instances, struct, hl, weights, and bias
+  if(!test_only && count<16){
     fprintf(stderr, "ERROR: Missing params in config file!\n");
     exit(EXIT_FAILURE);
   }
@@ -769,49 +796,113 @@ int main(int argc, char *argv[]){
   // Initialize structure
   structure = (int*) calloc(hidden_layers + 2, sizeof(int));
   char* struct_dup = strdup(struct_string);
-
+  char* struct_ptr = struct_dup;
   count = 0;
   char* token;
   while((token=strsep(&struct_dup, ","))){
     structure[count++] = atoi(token);
-    printf("%s\n",token);
   }
-  free(struct_dup);
+  free(struct_ptr);
 
-  // Copy train and validation dataset and labels
-  printf("Copying training dataset...\n");
-  double** train_matrix = initialize_matrix(train_instances, structure[0], 0);
-  double** validation_matrix = initialize_matrix(validation_instances, structure[0], 0);
-  int* train_labels = (int*) malloc(train_instances * sizeof(int));
-  int* validation_labels = (int*) malloc(validation_instances * sizeof(int));
-  read_dataset(train_matrix, train_instances, structure[0], train_file);
-  read_dataset(validation_matrix, validation_instances, structure[0], validation_file);
-  read_labels(train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
-  read_labels(validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
+  double*** NN;
+  double** bias;
+  // You train
+  if(!test_only){
+    // Copy train and validation dataset and labels
+    printf("Copying training dataset...\n");
+    double** train_matrix = initialize_matrix(train_instances, structure[0], 0);
+    double** validation_matrix = initialize_matrix(validation_instances, structure[0], 0);
+    int* train_labels = (int*) calloc(train_instances, sizeof(int));
+    int* validation_labels = (int*) calloc(validation_instances, sizeof(int));
+    read_dataset(train_matrix, train_instances, structure[0], train_file);
+    read_dataset(validation_matrix, validation_instances, structure[0], validation_file);
+    int orig_min = read_labels(train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
+    read_labels(validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
+    
+    // initialize network weights
+    NN = initialize_network(structure, hidden_layers);
+
+    bias = initialize_bias(structure, hidden_layers);
+
+    train_neural_network(max_epoch, structure, hidden_layers, train_instances, train_matrix, train_labels, validation_instances, validation_matrix, validation_labels, learning_rate, NN, bias, total_err_file);
+    
+    nf = fopen(weights_file,"w");
+    bf = fopen(bias_file,"w");
+    for(int i=0; i<hidden_layers+1; i++){
+      for(int j=0; j<structure[i+1]; j++){
+        char str[1000] = "";
+        for(int k=0; k<structure[i]; k++){
+          sprintf(str, "%s,%lf", str, NN[i][j][k]);
+        }
+        sprintf(str, "%s\n", str);
+        fputs(str, nf);
+      }
+      fputs("\n", nf);
+    }
+    for(int i=0; i<hidden_layers+1; i++){
+      char str[1000] = "";
+      for(int j=0; j<structure[i+1]; j++){
+        sprintf(str, "%s,%lf", str, bias[i][j]);
+      }
+      sprintf(str, "%s\n", str);
+      fputs(str, nf);
+    }
+    free_matrix(train_matrix,train_instances, structure[0]);
+    free_matrix(validation_matrix,validation_instances, structure[0]);
+    free(train_labels);
+    free(validation_labels);
+  }else{ // Get existing NN and bias
+    NN = (double***) calloc((hidden_layers+1), sizeof(double**));
+    for(int i=0; i<=hidden_layers; i++){
+      NN[i] = (double**) calloc(structure[i+1], sizeof(double*));
+      for(int j=0; j<structure[i+1]; j++){
+        int bufflen = structure[i+1] * cell_length;
+        char line[bufflen];
+        fgets(line, bufflen, nf);
+        char* dup = strdup(line);
+        char* ptr = dup;
+        char* token;
+        NN[i][j] = (double*) calloc(structure[i], sizeof(double));
+        for(int k=0; k<structure[i]; k++){
+          token = strsep(&dup, ",");
+          NN[i][j][k] = atof(token);
+        }
+        free(ptr);  
+      }
+    }
+
+    bias = (double**) calloc((hidden_layers+1), sizeof(double*));
+    for(int i=0; i<=hidden_layers; i++){
+      bias[i] = (double*) calloc(structure[i+1], sizeof(double));
+      int bufflen = structure[i+1] * cell_length;
+      char line[bufflen];
+      fgets(line, bufflen, bf);
+      char* dup = strdup(line);
+      char* ptr = dup;
+      char* token;
+      for(int j=0; j<structure[i+1]; j++){
+        token = strsep(&dup, ",");
+        bias[i][j] = atof(token);
+      }
+      free(ptr);
+    }
+
+  }
   
-  // initialize network weights
-  double*** NN = initialize_network(structure, hidden_layers);
 
-  double** bias = initialize_bias(structure, hidden_layers);
 
-  train_neural_network(max_epoch, structure, hidden_layers, train_instances, train_matrix, train_labels, validation_instances, validation_matrix, validation_labels, learning_rate, NN, bias);
-  
   // copy test dataset
   printf("Copying test dataset...\n");
   double** test_matrix = initialize_matrix(test_instances, structure[0], 0);
   read_dataset(test_matrix, test_instances, structure[0], test_file);
-  test_neural_net(structure, hidden_layers, test_instances, test_matrix, NN, bias);
+  test_neural_net(structure, hidden_layers, test_instances, test_matrix, NN, bias, orig_min, test_out);
   
   // free variables
-  free_matrix(train_matrix,train_instances, structure[0]);
-  free_matrix(validation_matrix,validation_instances, structure[0]);
   free_matrix(test_matrix,test_instances, structure[0]);
-  free(train_labels);
-  free(validation_labels);
+  
+
   for(int i=0; i<hidden_layers+1; i++){
     for(int j=0; j<structure[i+1]; j++){
-      for(int k=0; k<structure[i]; k++){
-      }
       free(NN[i][j]);
     }
       free(NN[i]);
