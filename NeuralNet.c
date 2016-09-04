@@ -334,20 +334,20 @@ void copy_pointer(double **src,
 /*
  * Frees a matrix pointer
  */
-void free_matrix(double** matrix,
+void free_matrix(double*** matrix,
                  int row,
                  int col){
   for(int i=0; i<row; i++){
-    free(matrix[i]);
+    free((*matrix)[i]);
   }
-  free(matrix);
+  free(*matrix);
 }
 
 
 /* 
  * set values of output nodes
  */
-void set_output_nodes(int value, int node_num, double** out){
+void set_output_nodes(int value, int node_num, double*** out){
   int pow = 1 << node_num;
   int mod = value % pow;
   if(mod!=value){
@@ -359,9 +359,9 @@ void set_output_nodes(int value, int node_num, double** out){
     int quotient = value/pow;
     value = value%pow;
     if(quotient)
-      out[node_num-1-i][0]=1;
+      (*out)[node_num-1-i][0]=1;
     else
-      out[node_num-1-i][0]=0;
+      (*out)[node_num-1-i][0]=0;
   }
 }
 
@@ -497,7 +497,7 @@ void train_neural_network(int max_epoch,
     double** err;
     for(int n=0; n<train_instances; n++){
       // Pick an input and out output randomly
-      set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], desired);
+      set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], &desired);
 
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
@@ -510,12 +510,12 @@ void train_neural_network(int max_epoch,
         double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
         copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
         double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
-        free_matrix(in,structure[i],1);
+        free_matrix(&in,structure[i],1);
         double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
-        free_matrix(v_mul,structure[i+1],1);
+        free_matrix(&v_mul,structure[i+1],1);
         out = matrix_sigmoid(v_add, structure[i+1],1);
-        free_matrix(v_add,structure[i+1],1);
-        free_matrix(layer_bias,structure[i+1],1);
+        free_matrix(&v_add,structure[i+1],1);
+        free_matrix(&layer_bias,structure[i+1],1);
         copy_pointer(out,NULL,structure[i+1],1,NULL,out_NN[i],structure[i+1],0);
         in = out;
       }
@@ -533,14 +533,14 @@ void train_neural_network(int max_epoch,
           delta = pointwise_multiplication(mult_result, 0, structure[i+1], 1, sub_result, structure[i+1], 1);
           
           // free variables
-          free_matrix(mult_result, structure[i+1], 1);
-          free_matrix(sub_result, structure[i+1], 1);
+          free_matrix(&mult_result, structure[i+1], 1);
+          free_matrix(&sub_result, structure[i+1], 1);
 
         }else{
           double** sub_result = matrix_addition(NULL, 1, structure[i+1], 1, out, 0, structure[i+1], 1, 1);
           double** weight_next_transpose = matrix_transposition(NN[i+1], structure[i+2], structure[i+1]);
           double** weight_prevdelta_mult = matrix_multiplication(weight_next_transpose, structure[i+1], structure[i+2], delta, structure[i+2], 1);
-          free_matrix(delta, structure[i+2], 1);
+          free_matrix(&delta, structure[i+2], 1);
           double** mult_out = pointwise_multiplication(out, 0, structure[i+1], 1, sub_result, structure[i+1], 1);
           delta = pointwise_multiplication(mult_out, 0, structure[i+1], 1, weight_prevdelta_mult, structure[i+1], 1);
         }
@@ -562,16 +562,16 @@ void train_neural_network(int max_epoch,
         double** new_bias = matrix_addition(layer_bias, 0, structure[i+1], 1, mult_result2, 0, structure[i+1], 1, 0);
         copy_pointer(new_bias, NULL, structure[i+1], 1, NULL, bias[i], structure[i+1], 0);        
         // free variables
-        free_matrix(mult_result2, structure[i+1], 1);
-        free_matrix(out, structure[i+1], 1);
-        free_matrix(transpose, 1, structure[i]);
-        free_matrix(delta_mult, structure[i+1], structure[i]);
-        free_matrix(new_weight, structure[i+1], structure[i]);
-        free_matrix(layer_bias, structure[i+1],1);
-        free_matrix(new_bias, structure[i+1],1);
+        free_matrix(&mult_result2, structure[i+1], 1);
+        free_matrix(&out, structure[i+1], 1);
+        free_matrix(&transpose, 1, structure[i]);
+        free_matrix(&delta_mult, structure[i+1], structure[i]);
+        free_matrix(&new_weight, structure[i+1], structure[i]);
+        free_matrix(&layer_bias, structure[i+1],1);
+        free_matrix(&new_bias, structure[i+1],1);
         out = prev_layer_out;
       }
-      free_matrix(out, structure[0], 1);
+      free_matrix(&out, structure[0], 1);
       // double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
       // // sum errors for mean square
       // for(int i=0; i<structure[hidden_layers+1];i++){
@@ -582,7 +582,7 @@ void train_neural_network(int max_epoch,
     // validation stage
     for(int n=0; n<validation_instances; n++){
       // Pick an input and out output
-      set_output_nodes(validation_output_vector[n], structure[hidden_layers+1], desired);
+      set_output_nodes(validation_output_vector[n], structure[hidden_layers+1], &desired);
 
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, validation_input_matrix[n], structure[0], 0, in, NULL, structure[0], 1);
@@ -593,12 +593,12 @@ void train_neural_network(int max_epoch,
         double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
         copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
         double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
-        free_matrix(in,structure[i],1);
+        free_matrix(&in,structure[i],1);
         double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
-        free_matrix(v_mul,structure[i+1],1);
+        free_matrix(&v_mul,structure[i+1],1);
         out = matrix_sigmoid(v_add, structure[i+1],1);
-        free_matrix(v_add,structure[i+1],1);
-        free_matrix(layer_bias,structure[i+1],1);
+        free_matrix(&v_add,structure[i+1],1);
+        free_matrix(&layer_bias,structure[i+1],1);
         in = out;
       }
       double** err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
@@ -630,7 +630,17 @@ void train_neural_network(int max_epoch,
       printf("Completed after %d iterations. Error is %lf\n", iter, totalerr[iter]);
       break;
     }
-  }
+  // }
+  // for(int i=0; i<hidden_layers+1; i++){
+  //   for(int j=0; j<structure[i+1]; j++){
+  //     for(int k=0; k<structure[i]; k++){
+  //       printf("%lf", NN[i][j][k]);
+  //       if(k<structure[i]-1)
+  //         printf(",");
+  //     }
+  //     printf("\n");
+  //   }
+  // }
   // free variables
   free(totalerr);
   free(desired);
@@ -655,19 +665,18 @@ void test_neural_net(int* structure,
       double** layer_bias = initialize_matrix(structure[i+1], 1, 0);
       copy_pointer(NULL, bias[i], structure[i+1], 0, layer_bias, NULL, structure[i+1], 1);
       double** v_mul = matrix_multiplication(NN[i],structure[i+1],structure[i],in,structure[i],1);
-      free_matrix(in,structure[i],1);
+      free_matrix(&in,structure[i],1);
       double** v_add = matrix_addition(v_mul,0,structure[i+1],1,layer_bias,0,structure[i+1],1,0);
-      free_matrix(v_mul,structure[i+1],1);
+      free_matrix(&v_mul,structure[i+1],1);
       out = matrix_sigmoid(v_add, structure[i+1],1);
-      free_matrix(v_add,structure[i+1],1);
-      free_matrix(layer_bias,structure[i+1],1);
+      free_matrix(&v_add,structure[i+1],1);
+      free_matrix(&layer_bias,structure[i+1],1);
       in = out;
     }
     int output = get_output_in_decimal(structure[hidden_layers+1],out);
     char out_str[20];
     sprintf(out_str, "%d\n", output + orig_min);
     fputs(out_str, out_file);
-    printf("%d\n",output);
   }
   fclose(out_file);
 }
@@ -836,23 +845,28 @@ int main(int argc, char *argv[]){
       for(int j=0; j<structure[i+1]; j++){
         char str[1000] = "";
         for(int k=0; k<structure[i]; k++){
-          sprintf(str, "%s,%lf", str, NN[i][j][k]);
+          sprintf(str, "%lf", NN[i][j][k]);
+          fputs(str, nf);
+          if(k<structure[i]-1)
+            fputs(",", nf);
         }
-        sprintf(str, "%s\n", str);
-        fputs(str, nf);
+        fputs("\n", nf);
       }
-      fputs("\n", nf);
     }
+    fclose(nf);
     for(int i=0; i<hidden_layers+1; i++){
       char str[1000] = "";
-      for(int j=0; j<structure[i+1]; j++){
-        sprintf(str, "%s,%lf", str, bias[i][j]);
+      for(int j=0; j<structure[i+1]; j++){\
+        sprintf(str, "%lf", bias[i][j]);
+        fputs(str, bf);
+        if(j<structure[i+1]-1)
+          fputs(",", bf);
       }
-      sprintf(str, "%s\n", str);
-      fputs(str, nf);
+      fputs("\n", bf);
     }
-    free_matrix(train_matrix,train_instances, structure[0]);
-    free_matrix(validation_matrix,validation_instances, structure[0]);
+    fclose(bf);
+    free_matrix(&train_matrix,train_instances, structure[0]);
+    free_matrix(&validation_matrix,validation_instances, structure[0]);
     free(train_labels);
     free(validation_labels);
   }else{ // Get existing NN and bias
@@ -902,7 +916,7 @@ int main(int argc, char *argv[]){
   test_neural_net(structure, hidden_layers, test_instances, test_matrix, NN, bias, orig_min, test_out);
   
   // free variables
-  free_matrix(test_matrix,test_instances, structure[0]);
+  free_matrix(&test_matrix,test_instances, structure[0]);
   
 
   for(int i=0; i<hidden_layers+1; i++){
