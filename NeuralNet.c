@@ -630,7 +630,7 @@ void train_neural_network(int max_epoch,
       printf("Completed after %d iterations. Error is %lf\n", iter, totalerr[iter]);
       break;
     }
-  // }
+  }
   // for(int i=0; i<hidden_layers+1; i++){
   //   for(int j=0; j<structure[i+1]; j++){
   //     for(int k=0; k<structure[i]; k++){
