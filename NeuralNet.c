@@ -337,8 +337,9 @@ void copy_pointer(double **src,
 void free_matrix(double** matrix,
                  int row,
                  int col){
-  for(int i=0; i<row; i++)
+  for(int i=0; i<row; i++){
     free(matrix[i]);
+  }
   free(matrix);
 }
 
@@ -391,7 +392,7 @@ int check_prefix(const char *prefix, const char *str)
 /*
  * Reads a csv file and store inputs to a 2x2 matrix
  */
-void read_dataset(double** matrix, int row, int col, char* filename){
+void read_dataset(double*** matrix, int row, int col, char* filename){
   FILE* dataset=fopen(filename, "r");
   int bufflen = row * cell_length; // buffer length is number of features times max cell len
   char* line = (char*) calloc(bufflen, sizeof(char));
@@ -403,7 +404,7 @@ void read_dataset(double** matrix, int row, int col, char* filename){
     char* token;
     int j = 0;
     while ((token = strsep(&dup, ","))){
-      matrix[i][j] = atof(token);
+      (*matrix)[i][j] = atof(token);
       j++;
       if(j>col){
         fprintf(stderr, "ERROR: Too few allocated columns!\n");
@@ -423,7 +424,7 @@ void read_dataset(double** matrix, int row, int col, char* filename){
 }
 
 
-int read_labels(int* vector, int out_instances, int out_nodes, char* filename){
+int read_labels(int** vector, int out_instances, int out_nodes, char* filename){
   FILE* labelset = fopen(filename, "r");
   int bufflen = 20;
   char line[bufflen];
@@ -431,11 +432,11 @@ int read_labels(int* vector, int out_instances, int out_nodes, char* filename){
   int min=INT_MAX;
   int max=INT_MIN;
   while(fgets(line, bufflen, labelset)){
-    vector[i] = atoi(line);
-    if(vector[i]<min)
-      min = vector[i];
-    if(vector[i]>max)
-      max = vector[i];
+    (*vector)[i] = atoi(line);
+    if((*vector)[i]<min)
+      min = (*vector)[i];
+    if((*vector)[i]>max)
+      max = (*vector)[i];
     i++;
     if(i>out_instances){
       fprintf(stderr, "ERROR: Too few allocated out rows!\n");
@@ -450,7 +451,7 @@ int read_labels(int* vector, int out_instances, int out_nodes, char* filename){
   // Adjust the outputs so that they start with zero
   if(min!=0){
     for(int i=0; i<out_instances; i++)
-      vector[i]-=min;
+      (*vector)[i]-=min;
   }
   return min;
 }
@@ -500,6 +501,9 @@ void train_neural_network(int max_epoch,
 
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
+      // for(int i=0; i<structure[0]; i++){
+      //   printf("%d %d\n", train_input_matrix[perm[n]][i], in[i]);
+      // }
       // forward pass
       double** out;
       for(int i=0; i<=hidden_layers; i++){
@@ -814,11 +818,11 @@ int main(int argc, char *argv[]){
     double** validation_matrix = initialize_matrix(validation_instances, structure[0], 0);
     int* train_labels = (int*) calloc(train_instances, sizeof(int));
     int* validation_labels = (int*) calloc(validation_instances, sizeof(int));
-    read_dataset(train_matrix, train_instances, structure[0], train_file);
-    read_dataset(validation_matrix, validation_instances, structure[0], validation_file);
-    int orig_min = read_labels(train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
-    read_labels(validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
-    
+    read_dataset(&train_matrix, train_instances, structure[0], train_file);
+    read_dataset(&validation_matrix, validation_instances, structure[0], validation_file);
+
+    int orig_min = read_labels(&train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
+
     // initialize network weights
     NN = initialize_network(structure, hidden_layers);
 
@@ -894,7 +898,7 @@ int main(int argc, char *argv[]){
   // copy test dataset
   printf("Copying test dataset...\n");
   double** test_matrix = initialize_matrix(test_instances, structure[0], 0);
-  read_dataset(test_matrix, test_instances, structure[0], test_file);
+  read_dataset(&test_matrix, test_instances, structure[0], test_file);
   test_neural_net(structure, hidden_layers, test_instances, test_matrix, NN, bias, orig_min, test_out);
   
   // free variables
