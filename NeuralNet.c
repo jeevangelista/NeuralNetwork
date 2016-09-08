@@ -427,7 +427,7 @@ void read_dataset(double*** matrix, int row, int col, char* filename){
 int read_labels(int** vector, int out_instances, int out_nodes, char* filename){
   FILE* labelset = fopen(filename, "r");
   int bufflen = 20;
-  char line[bufflen];
+  char* line = (char*) calloc(bufflen, sizeof(char));
   int i=0;
   int min=INT_MAX;
   int max=INT_MIN;
@@ -453,6 +453,7 @@ int read_labels(int** vector, int out_instances, int out_nodes, char* filename){
     for(int i=0; i<out_instances; i++)
       (*vector)[i]-=min;
   }
+  free(line);
   return min;
 }
 
@@ -655,7 +656,8 @@ void train_neural_network(int max_epoch,
   // }
   // free variables
   free(totalerr);
-  free(desired);
+  free_matrix(&desired, structure[hidden_layers+1], 1);
+  free_matrix(&out_NN, hidden_layers+1, structure[hidden_layers+1]);
   fclose(err_file);
  }
 
