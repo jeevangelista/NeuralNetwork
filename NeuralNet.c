@@ -454,6 +454,7 @@ int read_labels(int** vector, int out_instances, int out_nodes, char* filename){
       (*vector)[i]-=min;
   }
   free(line);
+  fclose(labelset);
   return min;
 }
 
