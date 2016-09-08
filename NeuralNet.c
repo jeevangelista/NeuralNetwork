@@ -945,5 +945,6 @@ int main(int argc, char *argv[]){
   for(int i=0; i<hidden_layers+1; i++)
     free(bias[i]);
   free(bias);
+  free(structure);
   return 0;
 }
