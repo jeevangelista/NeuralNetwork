@@ -535,14 +535,21 @@ void train_neural_network(int max_epoch,
           // free variables
           free_matrix(&mult_result, structure[i+1], 1);
           free_matrix(&sub_result, structure[i+1], 1);
+          free_matrix(&err, structure[i+1], 1);
 
         }else{
           double** sub_result = matrix_addition(NULL, 1, structure[i+1], 1, out, 0, structure[i+1], 1, 1);
           double** weight_next_transpose = matrix_transposition(NN[i+1], structure[i+2], structure[i+1]);
           double** weight_prevdelta_mult = matrix_multiplication(weight_next_transpose, structure[i+1], structure[i+2], delta, structure[i+2], 1);
+          //free unused memory
           free_matrix(&delta, structure[i+2], 1);
+          free_matrix(&weight_next_transpose, structure[i+1], structure[i+2]);
+          
           double** mult_out = pointwise_multiplication(out, 0, structure[i+1], 1, sub_result, structure[i+1], 1);
           delta = pointwise_multiplication(mult_out, 0, structure[i+1], 1, weight_prevdelta_mult, structure[i+1], 1);
+          free_matrix(&mult_out, structure[i+1], 1);
+          free_matrix(&sub_result, structure[i+1], 1);
+          free_matrix(&weight_prevdelta_mult, structure[i+1], structure[i+2]);
         }
         // compute new weights
         double** mult_result2 = pointwise_multiplication(NULL, learning_rate, structure[i+1], 1, delta, structure[i+1], 1);
@@ -571,6 +578,7 @@ void train_neural_network(int max_epoch,
         free_matrix(&new_bias, structure[i+1],1);
         out = prev_layer_out;
       }
+      free_matrix(&delta, structure[1], 1); // free deltas of first hidden layer
       free_matrix(&out, structure[0], 1);
       // double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
       // // sum errors for mean square
@@ -601,13 +609,16 @@ void train_neural_network(int max_epoch,
         free_matrix(&layer_bias,structure[i+1],1);
         in = out;
       }
-      double** err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
-      // last lang
+      err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
+
       double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
       // sum errors
       for(int i=0; i<structure[hidden_layers+1];i++){
         totalerr[iter] += err_mult[i][0];
       }
+      free_matrix(&err, structure[hidden_layers+1], 1);
+      free_matrix(&out, structure[hidden_layers+1], 1);
+      free_matrix(&err_mult, structure[hidden_layers+1], 1);
     }
     // // last lang
     // double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
@@ -630,6 +641,7 @@ void train_neural_network(int max_epoch,
       printf("Completed after %d iterations. Error is %lf\n", iter, totalerr[iter]);
       break;
     }
+    free(perm);
   }
   // for(int i=0; i<hidden_layers+1; i++){
   //   for(int j=0; j<structure[i+1]; j++){
@@ -674,6 +686,7 @@ void test_neural_net(int* structure,
       in = out;
     }
     int output = get_output_in_decimal(structure[hidden_layers+1],out);
+    free_matrix(&out, structure[hidden_layers+1], 1);
     char out_str[20];
     sprintf(out_str, "%d\n", output + orig_min);
     fputs(out_str, out_file);
