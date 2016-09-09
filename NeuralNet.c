@@ -489,7 +489,7 @@ void train_neural_network(int max_epoch,
                           char* err_filename){
 
   double** out_NN = initialize_outputs(structure, hidden_layers);
-  FILE* err_file = fopen(err_filename, "w");
+  //FILE* err_file = fopen(err_filename, "w");
   // initialize other variables
   double* totalerr = (double*) calloc(max_epoch, sizeof(double)); // calloc initializes to zero
   double** desired = initialize_matrix(structure[hidden_layers+1], 1, 1);
@@ -631,10 +631,10 @@ void train_neural_network(int max_epoch,
 
     // Mean square
     totalerr[iter] = totalerr[iter]/validation_instances;
-    char err_str[20];
-    sprintf(err_str, "%lf\n", totalerr[iter]);
-    printf("%s",err_str);
-    fputs(err_str, err_file);
+    // char err_str[20] = {0};
+    // sprintf(err_str, "%lf\n", totalerr[iter]);
+    // printf("%s",err_str);
+    // fputs(err_str, err_file);
     // Print update
     if(iter%500 == 0)
       printf("Iteration: %d Error: %lf\n", iter, totalerr[iter]);
@@ -645,21 +645,11 @@ void train_neural_network(int max_epoch,
     }
     free(perm);
   }
-  // for(int i=0; i<hidden_layers+1; i++){
-  //   for(int j=0; j<structure[i+1]; j++){
-  //     for(int k=0; k<structure[i]; k++){
-  //       printf("%lf", NN[i][j][k]);
-  //       if(k<structure[i]-1)
-  //         printf(",");
-  //     }
-  //     printf("\n");
-  //   }
-  // }
   // free variables
   free(totalerr);
   free_matrix(&desired, structure[hidden_layers+1], 1);
   free_matrix(&out_NN, hidden_layers+1, structure[hidden_layers+1]);
-  fclose(err_file);
+  //fclose(err_file);
  }
 
 
@@ -805,7 +795,6 @@ int main(int argc, char *argv[]){
     else if(check_prefix("OriginalMinimum=", line))
       orig_min = atoi(l);
   }
-
   // Close file
   fclose(config);
   
@@ -890,8 +879,8 @@ int main(int argc, char *argv[]){
     for(int i=0; i<=hidden_layers; i++){
       NN[i] = (double**) calloc(structure[i+1], sizeof(double*));
       for(int j=0; j<structure[i+1]; j++){
-        int bufflen = structure[i+1] * cell_length;
-        char line[bufflen];
+        int bufflen = structure[i] * cell_length;
+        char* line = (char*) calloc(bufflen, sizeof(char));
         fgets(line, bufflen, nf);
         char* dup = strdup(line);
         char* ptr = dup;
@@ -901,14 +890,14 @@ int main(int argc, char *argv[]){
           token = strsep(&dup, ",");
           NN[i][j][k] = atof(token);
         }
-        free(ptr);  
+        free(ptr);
       }
     }
 
     bias = (double**) calloc((hidden_layers+1), sizeof(double*));
     for(int i=0; i<=hidden_layers; i++){
       bias[i] = (double*) calloc(structure[i+1], sizeof(double));
-      int bufflen = structure[i+1] * cell_length;
+      int bufflen = structure[i] * cell_length;
       char line[bufflen];
       fgets(line, bufflen, bf);
       char* dup = strdup(line);
@@ -920,7 +909,8 @@ int main(int argc, char *argv[]){
       }
       free(ptr);
     }
-
+    fclose(nf);
+    fclose(bf);
   }
   
 
