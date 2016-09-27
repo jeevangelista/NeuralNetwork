@@ -489,12 +489,11 @@ void train_neural_network(int max_epoch,
                           char* err_filename){
 
   double** out_NN = initialize_outputs(structure, hidden_layers);
-  //FILE* err_file = fopen(err_filename, "w");
+  FILE* err_file = fopen(err_filename, "w");
   // initialize other variables
   double* totalerr = (double*) calloc(max_epoch, sizeof(double)); // calloc initializes to zero
   double** desired = initialize_matrix(structure[hidden_layers+1], 1, 1);
   for(int iter=0; iter<max_epoch; iter++){
-    printf("Iteration %d\n",iter);
     int* perm = shuffle(train_instances);
     double** err;
     for(int n=0; n<train_instances; n++){
@@ -612,6 +611,9 @@ void train_neural_network(int max_epoch,
         in = out;
       }
       err = matrix_addition(desired, 0, structure[hidden_layers+1], 1, out, 0, structure[hidden_layers+1],1,1);
+      // for(int i=0; i<structure[hidden_layers+1];i++)
+      //   printf("%lf->%lf\n", desired[i][0], out[i][0]);
+      // printf("\n");
 
       double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
       // sum errors
@@ -631,10 +633,10 @@ void train_neural_network(int max_epoch,
 
     // Mean square
     totalerr[iter] = totalerr[iter]/validation_instances;
-    // char err_str[20] = {0};
-    // sprintf(err_str, "%lf\n", totalerr[iter]);
-    // printf("%s",err_str);
-    // fputs(err_str, err_file);
+    char err_str[20] = {0};
+    sprintf(err_str, "%lf", totalerr[iter]);
+    fputs(err_str, err_file);
+    fputs("\n", err_file);
     // Print update
     if(iter%500 == 0)
       printf("Iteration: %d Error: %lf\n", iter, totalerr[iter]);
@@ -836,6 +838,7 @@ int main(int argc, char *argv[]){
     read_dataset(&validation_matrix, validation_instances, structure[0], validation_file);
 
     int orig_min = read_labels(&train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
+    read_labels(&validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
 
     // initialize network weights
     NN = initialize_network(structure, hidden_layers);
@@ -880,6 +883,7 @@ int main(int argc, char *argv[]){
       NN[i] = (double**) calloc(structure[i+1], sizeof(double*));
       for(int j=0; j<structure[i+1]; j++){
         int bufflen = structure[i] * cell_length;
+        printf("%d\n", bufflen);
         char* line = (char*) calloc(bufflen, sizeof(char));
         fgets(line, bufflen, nf);
         char* dup = strdup(line);
@@ -889,16 +893,16 @@ int main(int argc, char *argv[]){
         for(int k=0; k<structure[i]; k++){
           token = strsep(&dup, ",");
           NN[i][j][k] = atof(token);
+          printf("%s\n",token);
         }
         free(ptr);
       }
     }
-
     bias = (double**) calloc((hidden_layers+1), sizeof(double*));
     for(int i=0; i<=hidden_layers; i++){
       bias[i] = (double*) calloc(structure[i+1], sizeof(double));
-      int bufflen = structure[i] * cell_length;
-      char line[bufflen];
+      int bufflen = structure[i+1] * cell_length;
+      char* line = (char*) calloc(bufflen, sizeof(char));;
       fgets(line, bufflen, bf);
       char* dup = strdup(line);
       char* ptr = dup;

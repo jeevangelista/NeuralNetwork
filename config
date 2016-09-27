@@ -1,15 +1,19 @@
 # CONFIG FILE FOR SIMPLE NEURAL NET
-TrainFile=train.csv
-DesiredTrainOutFile=DesiredTrainOut.csv
-TrainInstances=1000
-ValidationFile=validation.csv
-DesiredValidationOutFile=DesiredValidationOut.csv
-ValidationInstances=200
-TestFile=test.csv
-TestOutFile=TestOut.csv
-TestInstances=300
-TotalErrFile=TotalErr.csv
+TrainFile=ts.csv
+DesiredTrainOutFile=tout.csv
+TrainInstances=8
+ValidationFile=ts.csv
+DesiredValidationOutFile=tout.csv
+ValidationInstances=8
+TestFile=ts.csv #Test File This is a comment
+TestOutFile=testsamp.csv
+TestInstances=8
+TotalErrFile=errsamp.csv
 HiddenLayers=2
-Structure=3 7 5 3
+Structure=3,7,5,3
 LearningRate=0.1
 MaxEpoch=50000
+WeightsFile=NNsamp.csv
+BiasFile=biassamp.csv
+#OriginalMinimum=1 #Smallest output label possible #For testing
+# Last one is optional if you don't want to shift the output labels by min instead of zero
