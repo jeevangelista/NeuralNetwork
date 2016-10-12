@@ -514,6 +514,7 @@ void train_neural_network(int max_epoch,
     for(int n=0; n<train_instances; n++){
       // Pick an input and out output randomly
       set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], &desired);
+      int o = get_output_in_decimal(structure[hidden_layers+1], desired);
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // for(int i=0; i<structure[0]; i++){
@@ -600,6 +601,7 @@ void train_neural_network(int max_epoch,
       // for(int i=0; i<structure[hidden_layers+1];i++){
       //   totalerr[iter] += err_mult[i][0];
       // }
+      desired[train_output_vector[perm[n]]][0] = 0;
     }
 
     // validation stage
