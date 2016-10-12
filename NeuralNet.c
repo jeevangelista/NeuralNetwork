@@ -513,8 +513,6 @@ void train_neural_network(int max_epoch,
     double** err;
     for(int n=0; n<train_instances; n++){
       // Pick an input and out output randomly
-      set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], &desired);
-      int o = get_output_in_decimal(structure[hidden_layers+1], desired);
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // for(int i=0; i<structure[0]; i++){
@@ -639,6 +637,7 @@ void train_neural_network(int max_epoch,
       free_matrix(&err, structure[hidden_layers+1], 1);
       free_matrix(&out, structure[hidden_layers+1], 1);
       free_matrix(&err_mult, structure[hidden_layers+1], 1);
+      desired[validation_output_vector[n]][0] = 0;
     }
     // // last lang
     // double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
@@ -856,6 +855,7 @@ int main(int argc, char *argv[]){
     int orig_min = read_labels(&train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
     read_labels(&validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
     
+    printf("Starting training...\n");
     // initialize network weights
     NN = initialize_network(structure, hidden_layers);
 
