@@ -298,7 +298,7 @@ double** initialize_matrix(int row, int col, int zero_flag){
     if(zero_flag)
       matrix[i] = (double*) calloc(col, sizeof(double));
     else
-      matrix[i] = (double*) calloc(col, sizeof(double));
+      matrix[i] = (double*) malloc(col* sizeof(double));
   return matrix;
 }
 
@@ -348,21 +348,28 @@ void free_matrix(double*** matrix,
  * set values of output nodes
  */
 void set_output_nodes(int value, int node_num, double*** out){
-  int pow = 1 << node_num;
-  int mod = value % pow;
-  if(mod!=value){
+  // int pow = 1 << node_num;
+  // int mod = value % pow;
+  // if(mod!=value){
+  //   fprintf(stderr, "ERROR: Number of nodes not enough to represent output!\n");
+  //   exit(EXIT_FAILURE);
+  // }
+  // for(int i=node_num-1; i>=0; i--){
+  //   int pow = 1<< i;
+  //   int quotient = value/pow;
+  //   value = value%pow;
+  //   if(quotient)
+  //     (*out)[node_num-1-i][0]=1;
+  //   else
+  //     (*out)[node_num-1-i][0]=0;
+  // }
+  if(value >= node_num){
     fprintf(stderr, "ERROR: Number of nodes not enough to represent output!\n");
     exit(EXIT_FAILURE);
+  }else{
+    (*out)[value][0] = 1;
   }
-  for(int i=node_num-1; i>=0; i--){
-    int pow = 1<< i;
-    int quotient = value/pow;
-    value = value%pow;
-    if(quotient)
-      (*out)[node_num-1-i][0]=1;
-    else
-      (*out)[node_num-1-i][0]=0;
-  }
+
 }
 
 
@@ -370,13 +377,22 @@ void set_output_nodes(int value, int node_num, double*** out){
  * set values of output nodes
  */
 int get_output_in_decimal(int node_num, double** out){
-  int val = 0;
-  for(int i=node_num-1; i>=0; i--){
-    int pow = 1<< i;
-    if(out[node_num-1-i][0]>0.5)
-      val = val+pow;
+  // int val = 0;
+  // for(int i=node_num-1; i>=0; i--){
+  //   int pow = 1<< i;
+  //   if(out[node_num-1-i][0]>0.5)
+  //     val = val+pow;
+  // }
+  // return val;
+  float max = 0;
+  int out_val = -1;
+  for(int i=0; i<node_num; i++){
+    if(max<out[i][0]){
+      max = out[i][0];
+      out_val = i;
+    }
   }
-  return val;
+  return out_val;
 }
 
 
@@ -487,7 +503,6 @@ void train_neural_network(int max_epoch,
                           double*** NN,
                           double** bias,
                           char* err_filename){
-
   double** out_NN = initialize_outputs(structure, hidden_layers);
   FILE* err_file = fopen(err_filename, "w");
   // initialize other variables
@@ -499,7 +514,6 @@ void train_neural_network(int max_epoch,
     for(int n=0; n<train_instances; n++){
       // Pick an input and out output randomly
       set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], &desired);
-
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
       // for(int i=0; i<structure[0]; i++){
@@ -839,7 +853,7 @@ int main(int argc, char *argv[]){
 
     int orig_min = read_labels(&train_labels, train_instances, structure[hidden_layers+1], desired_train_out);
     read_labels(&validation_labels, validation_instances, structure[hidden_layers+1], desired_validation_out);
-
+    
     // initialize network weights
     NN = initialize_network(structure, hidden_layers);
 
