@@ -515,9 +515,8 @@ void train_neural_network(int max_epoch,
       // Pick an input and out output randomly
       double** in = initialize_matrix(structure[0],1, 0);
       copy_pointer(NULL, train_input_matrix[perm[n]], structure[0], 0, in, NULL, structure[0], 1);
-      // for(int i=0; i<structure[0]; i++){
-      //   printf("%d %d\n", train_input_matrix[perm[n]][i], in[i]);
-      // }
+      // Pick an input and out output
+      set_output_nodes(train_output_vector[perm[n]], structure[hidden_layers+1], &desired);
       // forward pass
       double** out;
       for(int i=0; i<=hidden_layers; i++){
@@ -628,7 +627,7 @@ void train_neural_network(int max_epoch,
       // for(int i=0; i<structure[hidden_layers+1];i++)
       //   printf("%lf->%lf\n", desired[i][0], out[i][0]);
       // printf("\n");
-
+      
       double** err_mult = pointwise_multiplication(err,0,structure[hidden_layers+1], 1, err, structure[hidden_layers+1], 1);
       // sum errors
       for(int i=0; i<structure[hidden_layers+1];i++){
