@@ -683,6 +683,7 @@ void test_neural_net(int* structure,
     int output = get_output_in_decimal(structure[hidden_layers+1],out);
     free_matrix(&out, structure[hidden_layers+1], 1);
     char out_str[20];
+    int out_int = output + orig_min;
     sprintf(out_str, "%d\n", output + orig_min);
     fputs(out_str, out_file);
   }
